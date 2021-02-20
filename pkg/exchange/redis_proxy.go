@@ -10,7 +10,7 @@ import (
 )
 
 func proxyRoom(room *Room, ch *redisChannel, userInputCh chan *model.RoomMessage) {
-	maxIdleTime := config.GetConf().MaxIdleTime
+	maxIdleTime := config.Conf.GetTerminalConf().MaxIdleTime
 	tick := time.NewTicker(time.Second * 30)
 	defer tick.Stop()
 	defer func() {

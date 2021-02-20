@@ -203,7 +203,7 @@ func NewAssetDir(user *model.User, asset model.Asset, addr string, logChan chan<
 	if strings.Contains(folderName, "/") {
 		folderName = strings.ReplaceAll(folderName, "/", "_")
 	}
-	conf := config.GetConf()
+	conf := config.Conf
 	return AssetDir{
 		user:        user,
 		asset:       &asset,

@@ -19,7 +19,6 @@ func RegisterTerminal(name, token, comment string) (res model.Terminal) {
 }
 
 func TerminalHeartBeat(sIds []string) (res []model.TerminalTask) {
-
 	data := map[string][]string{
 		"sessions": sIds,
 	}

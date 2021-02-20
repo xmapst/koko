@@ -63,7 +63,7 @@ func (u *UserSelectHandler) displayAssetResult(searchHeader string) {
 }
 
 func (u *UserSelectHandler) displaySortedAssets(searchHeader string) {
-	switch config.GetConf().AssetListSortBy {
+	switch config.Conf.GetTerminalConf().AssetListSortBy {
 	case "ip":
 		sortedAsset := IPAssetList(u.currentResult)
 		sort.Sort(sortedAsset)

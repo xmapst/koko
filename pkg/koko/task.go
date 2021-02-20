@@ -14,7 +14,7 @@ import (
 )
 
 func Initial() {
-	conf := config.GetConf()
+	conf := config.Conf
 	if conf.UploadFailedReplay {
 		go uploadRemainReplay(conf.RootPath)
 	}
@@ -125,4 +125,17 @@ func ValidateRemainReplayFile(path string) error {
 		_, err = f.Write([]byte(`}`))
 	}
 	return err
+}
+
+func KeepSyncConfigWithServer() {
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+	for range ticker.C {
+		conf, err := service.GetTerminalConfig()
+		if err != nil {
+			logger.Errorf("Sync config with server error: %s", err)
+			continue
+		}
+		config.Conf.UpdateTerminalConf(conf)
+	}
 }

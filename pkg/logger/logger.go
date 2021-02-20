@@ -25,7 +25,7 @@ func Initial() {
 		LogFormat:       "%time% [%lvl%] %msg%",
 		TimestampFormat: "2006-01-02 15:04:05",
 	}
-	conf := config.GetConf()
+	conf := config.Conf
 	level, ok := logLevels[strings.ToUpper(conf.LogLevel)]
 	if !ok {
 		level = logrus.InfoLevel

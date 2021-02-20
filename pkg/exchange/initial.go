@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"context"
 	"net"
 	"strings"
 
@@ -11,8 +10,8 @@ import (
 
 var manager roomManager
 
-func Initial(ctx context.Context) {
-	conf := config.GetConf()
+func Initial() {
+	conf := config.Conf
 	var (
 		err error
 	)

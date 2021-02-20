@@ -10,7 +10,7 @@ import (
 )
 
 func Initial()() {
-	cf := config.GetConf()
+	cf := config.Conf
 	localePath := path.Join(cf.RootPath, "locale")
 	if strings.HasPrefix(strings.ToLower(cf.LanguageCode), "en") {
 		gotext.Configure(localePath, "en_US", "koko")

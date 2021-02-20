@@ -30,7 +30,7 @@ func CpuLoad1Usage() float64 {
 }
 
 func DiskUsagePercent() float64 {
-	rootPath := config.GetConf().RootPath
+	rootPath := config.Conf.RootPath
 	usage, err := disk.Usage(rootPath)
 	if err != nil {
 		logger.Errorf("Get disk usage err: %s", err)

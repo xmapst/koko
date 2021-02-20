@@ -25,7 +25,7 @@ func NewCommonSwitch(p proxyEngine) *commonSwitch {
 	c := commonSwitch{
 		ID:            uuid.NewV4().String(),
 		DateStart:     common.CurrentUTCTime(),
-		MaxIdleTime:   config.GetConf().MaxIdleTime,
+		MaxIdleTime:   config.Conf.GetTerminalConf().MaxIdleTime,
 		keepAliveTime: time.Second * 60,
 		ctx:           ctx,
 		cancel:        cancel,

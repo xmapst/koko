@@ -63,7 +63,7 @@ type ColorMeta struct {
 
 func displayBanner(sess io.ReadWriter, user string) {
 	title := defaultTitle
-	cf := config.GetConf()
+	cf := config.Conf.GetTerminalConf()
 	if cf.HeaderTitle != "" {
 		title = cf.HeaderTitle
 	}

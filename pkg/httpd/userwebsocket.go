@@ -21,7 +21,7 @@ type Handler interface {
 
 type UserWebsocket struct {
 	Uuid           string
-	webSrv         *server
+	webSrv         *Server
 	conn           *ws.Socket
 	ctx            *gin.Context
 	messageChannel chan *Message

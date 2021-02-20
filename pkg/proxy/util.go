@@ -25,7 +25,7 @@ type CommandStorage interface {
 var defaultStorage = storage.ServerStorage{StorageType: "server"}
 
 func NewReplayStorage() ReplayStorage {
-	cf := config.GetConf().ReplayStorage
+	cf := config.Conf.GetTerminalConf().ReplayStorage
 	tp, ok := cf["TYPE"]
 	if !ok {
 		tp = "server"
@@ -126,7 +126,7 @@ func NewReplayStorage() ReplayStorage {
 }
 
 func NewCommandStorage() CommandStorage {
-	cf := config.GetConf().CommandStorage
+	cf := config.Conf.GetTerminalConf().CommandStorage
 	tp, ok := cf["TYPE"]
 	if !ok {
 		tp = "server"

@@ -9,30 +9,29 @@ import (
 	"time"
 
 	"github.com/jumpserver/koko/pkg/config"
-	"github.com/jumpserver/koko/pkg/exchange"
 	"github.com/jumpserver/koko/pkg/httpd"
-	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/service"
 	"github.com/jumpserver/koko/pkg/sshd"
 )
 
 var Version = "unknown"
 
-type Coco struct {
+type KoKo struct {
+	sshServer  *sshd.Server
+	httpServer *httpd.Server
 }
 
-func (c *Coco) Start() {
+func (k *KoKo) Start() {
 	fmt.Println(time.Now().Format("2006-01-02 15:04:05"))
 	fmt.Printf("Koko Version %s, more see https://www.jumpserver.org\n", Version)
 	fmt.Println("Quit the server with CONTROL-C.")
-	go sshd.StartServer()
-	go httpd.StartHTTPServer()
+	go k.sshServer.Start()
+	go k.httpServer.Start()
 }
 
-func (c *Coco) Stop() {
-	sshd.StopServer()
-	httpd.StopHTTPServer()
+func (k *KoKo) Stop() {
+	k.sshServer.Stop()
+	k.httpServer.Stop()
 	logger.Info("Quit The KoKo")
 }
 
@@ -42,7 +41,9 @@ func RunForever(confPath string) {
 	bootstrap(ctx)
 	gracefulStop := make(chan os.Signal, 1)
 	signal.Notify(gracefulStop, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	app := &Coco{}
+	sshdServer := sshd.NewServer()
+	httpServer := httpd.NewServer()
+	app := &KoKo{sshdServer, httpServer}
 	app.Start()
 	<-gracefulStop
 	cancelFunc()
@@ -50,9 +51,10 @@ func RunForever(confPath string) {
 }
 
 func bootstrap(ctx context.Context) {
-	i18n.Initial()
-	logger.Initial()
-	service.Initial(ctx)
-	exchange.Initial(ctx)
+	setupI18n()
+	setupLogger()
+	setupServiceAuth()
+	setupExchange()
+	setupTimingTasks(ctx)
 	Initial()
 }

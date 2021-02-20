@@ -137,7 +137,7 @@ func (r *ReplyRecorder) Record(b []byte) {
 
 func (r *ReplyRecorder) prepare() {
 	sessionID := r.SessionID
-	rootPath := config.GetConf().RootPath
+	rootPath := config.Conf.RootPath
 	today := time.Now().UTC().Format("2006-01-02")
 	gzFileName := sessionID + ".replay.gz"
 	replayDir := filepath.Join(rootPath, "data", "replays", today)

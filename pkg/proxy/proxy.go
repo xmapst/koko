@@ -112,7 +112,7 @@ func (p *ProxyServer) validatePermission() bool {
 
 // getSSHConn 获取ssh连接
 func (p *ProxyServer) getSSHConn() (srvConn *srvconn.ServerSSHConnection, err error) {
-	conf := config.GetConf()
+	conf := config.Conf
 	newClient, err := srvconn.NewClient(p.User, p.Asset, p.SystemUser,
 		conf.SSHTimeout*time.Second, conf.ReuseConnection)
 	if err != nil {
@@ -193,8 +193,8 @@ func (p *ProxyServer) getCacheSSHConn() (srvConn *srvconn.ServerSSHConnection, o
 
 // getTelnetConn 获取telnet连接
 func (p *ProxyServer) getTelnetConn() (srvConn *srvconn.ServerTelnetConnection, err error) {
-	conf := config.GetConf()
-	cusString := conf.TelnetRegex
+	conf := config.Conf
+	cusString := conf.GetTerminalConf().TelnetRegex
 	pattern, err := regexp.Compile(cusString)
 	if err != nil {
 		logger.Errorf("Conn[%s] telnet custom regex %s compile err: %s",
@@ -224,7 +224,7 @@ func (p *ProxyServer) getServerConn() (srvConn srvconn.ServerConnection, err err
 		utils.IgnoreErrWriteString(p.UserConn, "\r\n")
 		close(done)
 	}()
-	go p.sendConnectingMsg(done, config.GetConf().SSHTimeout*time.Second)
+	go p.sendConnectingMsg(done, config.Conf.SSHTimeout*time.Second)
 	if p.SystemUser.Protocol == "telnet" {
 		return p.getTelnetConn()
 	} else {
@@ -311,7 +311,7 @@ func (p *ProxyServer) checkRequiredSystemUserInfo() error {
 }
 
 func (p *ProxyServer) checkRequireReuseClient() bool {
-	if config.GetConf().ReuseConnection {
+	if config.Conf.ReuseConnection {
 		if strings.EqualFold(p.Asset.Platform, "linux") &&
 			strings.EqualFold(p.SystemUser.Protocol, "ssh") {
 			return true

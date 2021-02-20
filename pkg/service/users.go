@@ -196,7 +196,7 @@ func GetProfile() (user *model.User, err error) {
 		logger.Error(err)
 	}
 	if res != nil && res.StatusCode == http.StatusUnauthorized {
-		return user, AccessKeyUnauthorized
+		return user, model.AccessKeyUnauthorized
 	}
 	return user, err
 }

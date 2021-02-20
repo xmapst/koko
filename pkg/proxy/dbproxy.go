@@ -121,7 +121,7 @@ func (p *DBProxyServer) getServerConn(localTunnelAddr *net.TCPAddr) (srvConn srv
 		utils.IgnoreErrWriteString(p.UserConn, "\r\n")
 		close(done)
 	}()
-	go p.sendConnectingMsg(done, config.GetConf().SSHTimeout*time.Second)
+	go p.sendConnectingMsg(done, config.Conf.SSHTimeout*time.Second)
 	return p.getMysqlConn(localTunnelAddr)
 }
 

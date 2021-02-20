@@ -18,7 +18,7 @@ import (
 )
 
 type ClientAuth interface {
-	Sign() (date, sign string)
+	Sign(r *http.Request) error
 }
 
 type Client struct {
@@ -118,9 +118,7 @@ func (c *Client) setAuthHeader(r *http.Request) {
 		return
 	}
 	if c.Auth != nil {
-		date, sign := c.Auth.Sign()
-		r.Header.Set("Date", date)
-		r.Header.Set("Authorization", sign)
+		_ = c.Auth.Sign(r)
 	}
 }
 
@@ -248,6 +246,7 @@ func (c *Client) PostForm(url string, data interface{}, res interface{}) (err er
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return nil
 }
+
 func (c *Client) UploadFile(reqUrl string, gFile string, res interface{}, params ...map[string]string) (err error) {
 	fd, err := os.Open(gFile)
 	if err != nil {

@@ -66,7 +66,7 @@ type interactiveHandler struct {
 }
 
 func (h *interactiveHandler) Initial() {
-	conf := config.GetConf()
+	conf := config.Conf
 	if conf.ClientAliveInterval > 0 {
 		go h.keepSessionAlive(time.Duration(conf.ClientAliveInterval) * time.Second)
 	}
@@ -312,14 +312,14 @@ func getPageSize(term *utils.Terminal) int {
 
 	)
 	_, height := term.GetSize()
-	conf := config.GetConf()
-	switch conf.AssetListPageSize {
+	conf := config.Conf
+	switch conf.GetTerminalConf().AssetListPageSize {
 	case "auto":
 		pageSize = height - minHeight
 	case "all":
 		return PAGESIZEALL
 	default:
-		if value, err := strconv.Atoi(conf.AssetListPageSize); err == nil {
+		if value, err := strconv.Atoi(conf.GetTerminalConf().AssetListPageSize); err == nil {
 			pageSize = value
 		} else {
 			pageSize = height - minHeight

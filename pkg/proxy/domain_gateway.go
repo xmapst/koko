@@ -85,7 +85,7 @@ func (d *domainGateway) Start() (addr *net.TCPAddr, err error) {
 }
 
 func (d *domainGateway) getAvailableGateway() bool {
-	configTimeout := config.GetConf().SSHTimeout
+	configTimeout := config.Conf.SSHTimeout
 	for i := range d.domain.Gateways {
 		gateway := d.domain.Gateways[i]
 		if gateway.Protocol == "ssh" {

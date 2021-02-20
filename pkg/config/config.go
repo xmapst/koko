@@ -1,55 +1,48 @@
 package config
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"gopkg.in/yaml.v2"
+
+	"github.com/jumpserver/koko/pkg/model"
 )
 
 var CipherKey = "JumpServer Cipher Key for KoKo !"
 
 type Config struct {
-	AssetListPageSize   string                 `json:"TERMINAL_ASSET_LIST_PAGE_SIZE"`
-	AssetListSortBy     string                 `json:"TERMINAL_ASSET_LIST_SORT_BY"`
-	HeaderTitle         string                 `json:"TERMINAL_HEADER_TITLE"`
-	HostKey             string                 `json:"TERMINAL_HOST_KEY" yaml:"HOST_KEY"`
-	PasswordAuth        bool                   `json:"TERMINAL_PASSWORD_AUTH" yaml:"PASSWORD_AUTH"`
-	PublicKeyAuth       bool                   `json:"TERMINAL_PUBLIC_KEY_AUTH" yaml:"PUBLIC_KEY_AUTH"`
-	CommandStorage      map[string]interface{} `json:"TERMINAL_COMMAND_STORAGE"`
-	ReplayStorage       map[string]interface{} `json:"TERMINAL_REPLAY_STORAGE" yaml:"REPLAY_STORAGE"`
-	SessionKeepDuration time.Duration          `json:"TERMINAL_SESSION_KEEP_DURATION"`
-	TelnetRegex         string                 `json:"TERMINAL_TELNET_REGEX"`
-	MaxIdleTime         time.Duration          `json:"SECURITY_MAX_IDLE_TIME"`
-	HeartbeatDuration   time.Duration          `json:"TERMINAL_HEARTBEAT_INTERVAL"`
-	ShowHiddenFile      bool                   `yaml:"SFTP_SHOW_HIDDEN_FILE"`
-	ReuseConnection     bool                   `yaml:"REUSE_CONNECTION"`
-	Name                string                 `yaml:"NAME"`
-	HostKeyFile         string                 `yaml:"HOST_KEY_FILE"`
-	CoreHost            string                 `yaml:"CORE_HOST"`
-	BootstrapToken      string                 `yaml:"BOOTSTRAP_TOKEN"`
-	BindHost            string                 `yaml:"BIND_HOST"`
-	SSHPort             string                 `yaml:"SSHD_PORT"`
-	HTTPPort            string                 `yaml:"HTTPD_PORT"`
-	SSHTimeout          time.Duration          `yaml:"SSH_TIMEOUT"`
-	AccessKey           string                 `yaml:"ACCESS_KEY"`
-	AccessKeyFile       string                 `yaml:"ACCESS_KEY_FILE"`
-	LogLevel            string                 `yaml:"LOG_LEVEL"`
-	RootPath            string                 `yaml:"ROOT_PATH"`
-	Comment             string                 `yaml:"COMMENT"`
-	LanguageCode        string                 `yaml:"LANGUAGE_CODE"`
-	UploadFailedReplay  bool                   `yaml:"UPLOAD_FAILED_REPLAY_ON_START"`
-	AssetLoadPolicy     string                 `yaml:"ASSET_LOAD_POLICY"` // all
-	ZipMaxSize          string                 `yaml:"ZIP_MAX_SIZE"`
-	ZipTmpPath          string                 `yaml:"ZIP_TMP_PATH"`
-	ClientAliveInterval uint64                 `yaml:"CLIENT_ALIVE_INTERVAL"`
-	RetryAliveCountMax  int                    `yaml:"RETRY_ALIVE_COUNT_MAX"`
+	sync.Mutex
+	terminalConf *model.TerminalConfig
+
+	ShowHiddenFile      bool          `yaml:"SFTP_SHOW_HIDDEN_FILE"`
+	ReuseConnection     bool          `yaml:"REUSE_CONNECTION"`
+	Name                string        `yaml:"NAME"`
+	HostKeyFile         string        `yaml:"HOST_KEY_FILE"`
+	CoreHost            string        `yaml:"CORE_HOST"`
+	BootstrapToken      string        `yaml:"BOOTSTRAP_TOKEN"`
+	BindHost            string        `yaml:"BIND_HOST"`
+	SSHPort             string        `yaml:"SSHD_PORT"`
+	HTTPPort            string        `yaml:"HTTPD_PORT"`
+	SSHTimeout          time.Duration `yaml:"SSH_TIMEOUT"`
+	AccessKey           string        `yaml:"ACCESS_KEY"`
+	AccessKeyFile       string        `yaml:"ACCESS_KEY_FILE"`
+	LogLevel            string        `yaml:"LOG_LEVEL"`
+	RootPath            string        `yaml:"ROOT_PATH"`
+	LanguageCode        string        `yaml:"LANGUAGE_CODE"`
+	UploadFailedReplay  bool          `yaml:"UPLOAD_FAILED_REPLAY_ON_START"`
+	AssetLoadPolicy     string        `yaml:"ASSET_LOAD_POLICY"` // all
+	ZipMaxSize          string        `yaml:"ZIP_MAX_SIZE"`
+	ZipTmpPath          string        `yaml:"ZIP_TMP_PATH"`
+	ClientAliveInterval uint64        `yaml:"CLIENT_ALIVE_INTERVAL"`
+	RetryAliveCountMax  int           `yaml:"RETRY_ALIVE_COUNT_MAX"`
 
 	ShareRoomType string   `yaml:"SHARE_ROOM_TYPE"`
 	RedisHost     string   `yaml:"REDIS_HOST"`
@@ -62,10 +55,6 @@ type Config struct {
 func (c *Config) EnsureConfigValid() {
 	if c.LanguageCode == "" {
 		c.LanguageCode = "zh"
-	}
-	// 确保至少有一个认证
-	if !c.PublicKeyAuth && !c.PasswordAuth {
-		c.PasswordAuth = true
 	}
 }
 
@@ -84,14 +73,6 @@ func (c *Config) LoadFromYAMLPath(filepath string) error {
 		return err
 	}
 	return c.LoadFromYAML(body)
-}
-
-func (c *Config) LoadFromJSON(body []byte) error {
-	err := json.Unmarshal(body, c)
-	if err != nil {
-		log.Printf("Config load yaml error")
-	}
-	return nil
 }
 
 func (c *Config) LoadFromEnv() error {
@@ -128,6 +109,10 @@ func (c *Config) LoadFromEnv() error {
 			if num, err := strconv.Atoi(value); err == nil {
 				c.SSHTimeout = time.Duration(num)
 			}
+		case "REDIS_DB_ROOM":
+			if num, err := strconv.ParseUint(value, 0, 0); err == nil {
+				c.RedisDBIndex = num
+			}
 		case "REDIS_CLUSTERS":
 			clusters := strings.Split(value, ",")
 			c.RedisClusters = clusters
@@ -153,27 +138,41 @@ func (c *Config) Load(filepath string) error {
 	return nil
 }
 
-var lock = new(sync.RWMutex)
-var name = getDefaultName()
+func (c *Config) GetTerminalConf() model.TerminalConfig {
+	c.Lock()
+	defer c.Unlock()
+	return *c.terminalConf
+}
+
+func (c *Config) UpdateTerminalConf(conf model.TerminalConfig) {
+	c.Lock()
+	defer c.Unlock()
+	c.terminalConf = &conf
+}
+
+func (c *Config) GetAccessKeyFileFullPath() string {
+	keyPath := c.AccessKeyFile
+	if !path.IsAbs(c.AccessKeyFile) {
+		keyPath = filepath.Join(c.RootPath, keyPath)
+	}
+	return keyPath
+}
+
 var rootPath, _ = os.Getwd()
 var Conf = &Config{
-	Name:                name,
+	Name:                getDefaultName(),
 	CoreHost:            "http://localhost:8080",
 	BootstrapToken:      "",
 	BindHost:            "0.0.0.0",
 	SSHPort:             "2222",
 	SSHTimeout:          15,
 	HTTPPort:            "5000",
-	HeartbeatDuration:   10,
 	AccessKey:           "",
 	AccessKeyFile:       "data/keys/.access_key",
 	LogLevel:            "INFO",
 	HostKeyFile:         "data/keys/host_key",
-	HostKey:             "",
 	RootPath:            rootPath,
-	Comment:             "Coco",
-	ReplayStorage:       map[string]interface{}{"TYPE": "server"},
-	CommandStorage:      map[string]interface{}{"TYPE": "server"},
+	LanguageCode:        "zh",
 	UploadFailedReplay:  true,
 	ShowHiddenFile:      false,
 	ReuseConnection:     true,
@@ -186,18 +185,6 @@ var Conf = &Config{
 	RedisHost:           "127.0.0.1",
 	RedisPort:           "6379",
 	RedisPassword:       "",
-}
-
-func SetConf(conf Config) {
-	lock.Lock()
-	defer lock.Unlock()
-	Conf = &conf
-}
-
-func GetConf() Config {
-	lock.RLock()
-	defer lock.RUnlock()
-	return *Conf
 }
 
 const prefixName = "[KoKo]"
