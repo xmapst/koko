@@ -201,7 +201,9 @@ func (p *ProxyServer) getCacheSSHConn() (srvConn *srvconn.ServerSSHConnection, o
 // getTelnetConn 获取telnet连接
 func (p *ProxyServer) getTelnetConn() (srvConn *srvconn.ServerTelnetConnection, err error) {
 	conf := config.GetConf()
-	cusString := conf.TelnetRegex
+	// todo: telnet 正则配置
+	//cusString := conf.TelnetRegex
+	cusString := "telnet regex"
 	pattern, err := regexp.Compile(cusString)
 	if err != nil {
 		logger.Errorf("Conn[%s] telnet custom regex %s compile err: %s",

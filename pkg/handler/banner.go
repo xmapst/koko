@@ -6,7 +6,6 @@ import (
 	"io"
 	"text/template"
 
-	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/utils"
@@ -63,10 +62,11 @@ type ColorMeta struct {
 
 func displayBanner(sess io.ReadWriter, user string) {
 	title := defaultTitle
-	cf := config.GetConf()
-	if cf.HeaderTitle != "" {
-		title = cf.HeaderTitle
-	}
+	//cf := config.GetConf()
+	// todo: 修改 欢迎语标题
+	//if cf.HeaderTitle != "" {
+	//	title = cf.HeaderTitle
+	//}
 
 	prefix := utils.CharClear + utils.CharTab + utils.CharTab
 	suffix := utils.CharNewLine + utils.CharNewLine

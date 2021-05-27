@@ -8,7 +8,6 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 
 	"github.com/jumpserver/koko/pkg/common"
-	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/service"
@@ -67,16 +66,18 @@ func checkAuth(ctx ssh.Context, password, publicKey string) (res ssh.AuthResult)
 }
 
 func CheckUserPassword(ctx ssh.Context, password string) ssh.AuthResult {
-	if !config.GetConf().PasswordAuth {
-		return ssh.AuthFailed
-	}
+	// todo: password认证
+	//if !config.GetConf().PasswordAuth {
+	//	return ssh.AuthFailed
+	//}
 	return checkAuth(ctx, password, "")
 }
 
 func CheckUserPublicKey(ctx ssh.Context, key ssh.PublicKey) ssh.AuthResult {
-	if !config.GetConf().PublicKeyAuth {
-		return ssh.AuthFailed
-	}
+	// todo: public 认证
+	//if !config.GetConf().PublicKeyAuth {
+	//	return ssh.AuthFailed
+	//}
 	b := key.Marshal()
 	publicKey := common.Base64Encode(string(b))
 	return checkAuth(ctx, "", publicKey)

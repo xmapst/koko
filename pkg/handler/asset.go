@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/jumpserver/koko/pkg/common"
-	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
@@ -63,7 +62,12 @@ func (u *UserSelectHandler) displayAssetResult(searchHeader string) {
 }
 
 func (u *UserSelectHandler) displaySortedAssets(searchHeader string) {
-	switch config.GetConf().AssetListSortBy {
+	// todo: 资产展示排序方式
+
+	AssetListSortBy := "hostname"
+
+	//switch config.GetConf().AssetListSortBy {
+	switch AssetListSortBy {
 	case "ip":
 		sortedAsset := IPAssetList(u.currentResult)
 		sort.Sort(sortedAsset)

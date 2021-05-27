@@ -11,7 +11,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/jumpserver/koko/pkg/common"
-	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/exchange"
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
@@ -22,10 +21,12 @@ import (
 
 func NewCommonSwitch(p proxyEngine) *commonSwitch {
 	ctx, cancel := context.WithCancel(context.Background())
+	MaxIdleTime := time.Duration(30)
 	c := commonSwitch{
-		ID:            uuid.NewV4().String(),
-		DateStart:     common.CurrentUTCTime(),
-		MaxIdleTime:   config.GetConf().MaxIdleTime,
+		ID:        uuid.NewV4().String(),
+		DateStart: common.CurrentUTCTime(),
+		//MaxIdleTime:   config.GetConf().MaxIdleTime,
+		MaxIdleTime:   MaxIdleTime, // todo: 最大空闲时间
 		keepAliveTime: time.Second * 60,
 		ctx:           ctx,
 		cancel:        cancel,

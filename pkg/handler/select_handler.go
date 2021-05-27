@@ -11,6 +11,8 @@ import (
 	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/service"
 	"github.com/jumpserver/koko/pkg/utils"
+
+	JMSModel "github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 )
 
 type dataSource string
@@ -42,7 +44,7 @@ type UserSelectHandler struct {
 
 	allLocalData []map[string]interface{}
 
-	selectedNode  model.Node
+	selectedNode  JMSModel.Node
 	currentResult []map[string]interface{}
 
 	*pageInfo
@@ -106,7 +108,7 @@ func (u *UserSelectHandler) AutoCompletion() {
 	}
 }
 
-func (u *UserSelectHandler) SetNode(node model.Node) {
+func (u *UserSelectHandler) SetNode(node JMSModel.Node) {
 	u.SetSelectType(TypeNodeAsset)
 	u.selectedNode = node
 }

@@ -16,13 +16,15 @@ import (
 	"github.com/jumpserver/koko/pkg/service"
 	"github.com/jumpserver/koko/pkg/srvconn"
 	"github.com/jumpserver/koko/pkg/utils"
+
+	JMSModel "github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 )
 
 var _ proxyEngine = (*DBProxyServer)(nil)
 
 type DBProxyServer struct {
 	UserConn   UserConnection
-	User       *model.User
+	User       *JMSModel.User
 	Database   *model.DatabaseApplication
 	SystemUser *model.SystemUser
 

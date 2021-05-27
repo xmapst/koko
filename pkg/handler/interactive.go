@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+
 	"io"
 	"strconv"
 	"strings"
@@ -14,6 +15,7 @@ import (
 	"github.com/jumpserver/koko/pkg/common"
 	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/i18n"
+	JMSModel "github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/service"
@@ -58,7 +60,7 @@ type interactiveHandler struct {
 
 	selectHandler *UserSelectHandler
 
-	nodes model.NodeList
+	nodes JMSModel.NodeList
 
 	assetLoadPolicy string
 
@@ -252,8 +254,8 @@ func (h *interactiveHandler) loadUserNodes() {
 	h.nodes = service.GetUserNodes(h.user.ID)
 }
 
-func ConstructNodeTree(assetNodes []model.Node) treeprint.Tree {
-	model.SortNodesByKeyAndName(assetNodes)
+func ConstructNodeTree(assetNodes []JMSModel.Node) treeprint.Tree {
+	JMSModel.SortNodesByKeyAndName(assetNodes)
 	var treeMap = map[string]treeprint.Tree{}
 	tree := treeprint.New()
 	for i := 0; i < len(assetNodes); i++ {
@@ -307,14 +309,18 @@ func getPageSize(term *utils.Terminal) int {
 
 	)
 	_, height := term.GetSize()
-	conf := config.GetConf()
-	switch conf.AssetListPageSize {
+	// Todo: 分页方式
+	//conf := config.GetConf()
+	//switch conf.AssetListPageSize {
+
+	AssetListPageSize := "auto"
+	switch AssetListPageSize {
 	case "auto":
 		pageSize = height - minHeight
 	case "all":
 		return PAGESIZEALL
 	default:
-		if value, err := strconv.Atoi(conf.AssetListPageSize); err == nil {
+		if value, err := strconv.Atoi(AssetListPageSize); err == nil {
 			pageSize = value
 		} else {
 			pageSize = height - minHeight

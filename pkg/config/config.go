@@ -7,7 +7,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"gopkg.in/yaml.v2"
@@ -16,18 +15,6 @@ import (
 var CipherKey = "JumpServer Cipher Key for KoKo !"
 
 type Config struct {
-	AssetListPageSize   string                 `json:"TERMINAL_ASSET_LIST_PAGE_SIZE"`
-	AssetListSortBy     string                 `json:"TERMINAL_ASSET_LIST_SORT_BY"`
-	HeaderTitle         string                 `json:"TERMINAL_HEADER_TITLE"`
-	HostKey             string                 `json:"TERMINAL_HOST_KEY" yaml:"HOST_KEY"`
-	PasswordAuth        bool                   `json:"TERMINAL_PASSWORD_AUTH" yaml:"PASSWORD_AUTH"`
-	PublicKeyAuth       bool                   `json:"TERMINAL_PUBLIC_KEY_AUTH" yaml:"PUBLIC_KEY_AUTH"`
-	CommandStorage      map[string]interface{} `json:"TERMINAL_COMMAND_STORAGE"`
-	ReplayStorage       map[string]interface{} `json:"TERMINAL_REPLAY_STORAGE" yaml:"REPLAY_STORAGE"`
-	SessionKeepDuration time.Duration          `json:"TERMINAL_SESSION_KEEP_DURATION"`
-	TelnetRegex         string                 `json:"TERMINAL_TELNET_REGEX"`
-	MaxIdleTime         time.Duration          `json:"SECURITY_MAX_IDLE_TIME"`
-	HeartbeatDuration   time.Duration          `json:"TERMINAL_HEARTBEAT_INTERVAL"`
 	ShowHiddenFile      bool                   `yaml:"SFTP_SHOW_HIDDEN_FILE"`
 	ReuseConnection     bool                   `yaml:"REUSE_CONNECTION"`
 	Name                string                 `yaml:"NAME"`
@@ -57,15 +44,13 @@ type Config struct {
 	RedisPassword string   `yaml:"REDIS_PASSWORD"`
 	RedisDBIndex  uint64   `yaml:"REDIS_DB_ROOM"`
 	RedisClusters []string `yaml:"REDIS_CLUSTERS"`
+
+	EnableLocalPortForward bool `json:"ENABLE_LOCAL_PORT_FORWARD"`
 }
 
 func (c *Config) EnsureConfigValid() {
 	if c.LanguageCode == "" {
 		c.LanguageCode = "zh"
-	}
-	// 确保至少有一个认证
-	if !c.PublicKeyAuth && !c.PasswordAuth {
-		c.PasswordAuth = true
 	}
 }
 
@@ -153,7 +138,6 @@ func (c *Config) Load(filepath string) error {
 	return nil
 }
 
-var lock = new(sync.RWMutex)
 var name = getDefaultName()
 var rootPath, _ = os.Getwd()
 var Conf = &Config{
@@ -164,16 +148,12 @@ var Conf = &Config{
 	SSHPort:             "2222",
 	SSHTimeout:          15,
 	HTTPPort:            "5000",
-	HeartbeatDuration:   10,
 	AccessKey:           "",
 	AccessKeyFile:       "data/keys/.access_key",
 	LogLevel:            "INFO",
 	HostKeyFile:         "data/keys/host_key",
-	HostKey:             "",
 	RootPath:            rootPath,
-	Comment:             "Coco",
-	ReplayStorage:       map[string]interface{}{"TYPE": "server"},
-	CommandStorage:      map[string]interface{}{"TYPE": "server"},
+	Comment:             "KOKO",
 	UploadFailedReplay:  true,
 	ShowHiddenFile:      false,
 	ReuseConnection:     true,
@@ -188,15 +168,8 @@ var Conf = &Config{
 	RedisPassword:       "",
 }
 
-func SetConf(conf Config) {
-	lock.Lock()
-	defer lock.Unlock()
-	Conf = &conf
-}
 
 func GetConf() Config {
-	lock.RLock()
-	defer lock.RUnlock()
 	return *Conf
 }
 

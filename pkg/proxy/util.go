@@ -3,7 +3,6 @@ package proxy
 import (
 	"strings"
 
-	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/model"
 	storage "github.com/jumpserver/koko/pkg/proxy/recorderstorage"
 )
@@ -25,7 +24,9 @@ type CommandStorage interface {
 var defaultStorage = storage.ServerStorage{StorageType: "server"}
 
 func NewReplayStorage() ReplayStorage {
-	cf := config.GetConf().ReplayStorage
+	// todo： 存储配置
+	//cf := config.GetConf().ReplayStorage
+	cf := map[string]interface{}{}
 	tp, ok := cf["TYPE"]
 	if !ok {
 		tp = "server"
@@ -126,7 +127,9 @@ func NewReplayStorage() ReplayStorage {
 }
 
 func NewCommandStorage() CommandStorage {
-	cf := config.GetConf().CommandStorage
+	// todo： 命令配置
+	//cf := config.GetConf().CommandStorage
+	cf := map[string]interface{}{}
 	tp, ok := cf["TYPE"]
 	if !ok {
 		tp = "server"

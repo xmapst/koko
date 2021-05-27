@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
 )
 
 func proxyRoom(room *Room, ch *redisChannel, userInputCh chan *model.RoomMessage) {
-	maxIdleTime := config.GetConf().MaxIdleTime
+	// todo : 获取超时时间
+	//maxIdleTime := config.GetConf().MaxIdleTime
 	tick := time.NewTicker(time.Second * 30)
 	defer tick.Stop()
 	defer func() {
@@ -29,7 +29,8 @@ func proxyRoom(room *Room, ch *redisChannel, userInputCh chan *model.RoomMessage
 			return
 
 		case tickNow := <-tick.C:
-			if !tickNow.After(active.Add(maxIdleTime * time.Minute)) {
+			// todo 暂定 30分钟超时
+			if !tickNow.After(active.Add(30 * time.Minute)) {
 				continue
 			}
 			logger.Errorf("Redis room %s exceed max idle time", ch.roomId)
