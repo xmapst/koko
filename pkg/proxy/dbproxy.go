@@ -17,14 +17,13 @@ import (
 	"github.com/jumpserver/koko/pkg/srvconn"
 	"github.com/jumpserver/koko/pkg/utils"
 
-	JMSModel "github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 )
 
 var _ proxyEngine = (*DBProxyServer)(nil)
 
 type DBProxyServer struct {
 	UserConn   UserConnection
-	User       *JMSModel.User
+	User       *model.User
 	Database   *model.DatabaseApplication
 	SystemUser *model.SystemUser
 
@@ -127,7 +126,7 @@ func (p *DBProxyServer) getServerConn(localTunnelAddr *net.TCPAddr) (srvConn srv
 		utils.IgnoreErrWriteString(p.UserConn, "\r\n")
 		close(done)
 	}()
-	go p.sendConnectingMsg(done, config.GetConf().SSHTimeout*time.Second)
+	go p.sendConnectingMsg(done, time.Duration(config.GetConf().SSHTimeout)*time.Second)
 	return p.getMysqlConn(localTunnelAddr)
 }
 

@@ -9,7 +9,7 @@ import (
 	"github.com/jumpserver/koko/pkg/logger"
 )
 
-var manager roomManager
+var manager RoomManager
 
 func Initial(ctx context.Context) {
 	conf := config.GetConf()

@@ -69,8 +69,7 @@ func (s *JMService) GetProfile() (user *model.User, err error) {
 	return user, err
 }
 
-func (s *JMService) GetTerminalConfig() (model.TerminalConfig, error) {
-	var conf model.TerminalConfig
-	_, err := s.authClient.Get(TerminalConfigURL, &conf)
-	return conf, err
+func (s *JMService) GetTerminalConfig() (conf model.TerminalConfig, err error) {
+	_, err = s.authClient.Get(TerminalConfigURL, &conf)
+	return
 }

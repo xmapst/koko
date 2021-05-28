@@ -38,19 +38,19 @@ var upGrader = websocket.Upgrader{
 	},
 }
 
-func NewServer() *server {
-	return &server{
+func NewServer() *Server {
+	return &Server{
 		broadCaster: NewBroadcaster(),
 	}
 }
 
-type server struct {
+type Server struct {
 	broadCaster *broadcaster
 	eng         *gin.Engine
 	srv         *http.Server
 }
 
-func (s *server) Start() {
+func (s *Server) Start() {
 	conf := config.GetConf()
 	addr := net.JoinHostPort(conf.BindHost, conf.HTTPPort)
 	eng := registerHandlers(s)
@@ -61,11 +61,11 @@ func (s *server) Start() {
 	s.eng = eng
 	s.srv = srv
 	go s.broadCaster.Start()
-	logger.Info("Start HTTP server at ", addr)
+	logger.Info("Start HTTP Server at ", addr)
 	log.Print(s.srv.ListenAndServe())
 }
 
-func (s *server) Stop() {
+func (s *Server) Stop() {
 	ctx, cancelFunc := context.WithTimeout(context.TODO(), 10*time.Second)
 	defer cancelFunc()
 	if s.srv != nil {
@@ -73,7 +73,7 @@ func (s *server) Stop() {
 	}
 }
 
-func (s *server) middleSessionAuth() gin.HandlerFunc {
+func (s *Server) middleSessionAuth() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		if s.checkSessionValid(ctx) {
 			ctx.Next()
@@ -85,20 +85,19 @@ func (s *server) middleSessionAuth() gin.HandlerFunc {
 	}
 }
 
-func (s *server) middleDebugAuth() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		host, _, _ := net.SplitHostPort(c.Request.Host)
-		switch host {
+func (s *Server) middleDebugAuth() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		switch ctx.ClientIP() {
 		case "127.0.0.1", "localhost":
 			return
 		default:
-			_ = c.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid host %s", c.Request.Host))
+			_ = ctx.AbortWithError(http.StatusBadRequest, fmt.Errorf("invalid host %s",ctx.ClientIP()))
 			return
 		}
 	}
 }
 
-func (s *server) checkSessionValid(ctx *gin.Context) bool {
+func (s *Server) checkSessionValid(ctx *gin.Context) bool {
 	var (
 		csrfToken string
 		sessionid string
@@ -123,7 +122,7 @@ func (s *server) checkSessionValid(ctx *gin.Context) bool {
 	return true
 }
 
-func (s *server) sftpHostConnectorView(ctx *gin.Context) {
+func (s *Server) sftpHostConnectorView(ctx *gin.Context) {
 	var sid string
 	switch ctx.Request.Method {
 	case http.MethodGet:
@@ -164,7 +163,7 @@ func (s *server) sftpHostConnectorView(ctx *gin.Context) {
 	conn.ServeHTTP(ctx.Writer, ctx.Request)
 }
 
-func (s *server) processTerminalWebsocket(ctx *gin.Context) {
+func (s *Server) processTerminalWebsocket(ctx *gin.Context) {
 	var (
 		userValue   interface{}
 		currentUser *model.User
@@ -201,7 +200,7 @@ func (s *server) processTerminalWebsocket(ctx *gin.Context) {
 	s.runTTY(ctx, currentUser, targetType, targetId, systemUserId)
 }
 
-func (s *server) processTokenWebsocket(ctx *gin.Context) {
+func (s *Server) processTokenWebsocket(ctx *gin.Context) {
 	tokenId, _ := ctx.GetQuery("target_id")
 	tokenUser := service.GetTokenAsset(tokenId)
 	if tokenUser.UserID == "" {
@@ -221,7 +220,7 @@ func (s *server) processTokenWebsocket(ctx *gin.Context) {
 	s.runTTY(ctx, currentUser, targetType, targetId, systemUserId)
 }
 
-func (s *server) processElfinderWebsocket(ctx *gin.Context) {
+func (s *Server) processElfinderWebsocket(ctx *gin.Context) {
 	var (
 		userValue   interface{}
 		currentUser *model.User
@@ -267,7 +266,7 @@ func (s *server) processElfinderWebsocket(ctx *gin.Context) {
 	userConn.Run()
 }
 
-func (s *server) Upgrade(ctx *gin.Context) (*ws.Socket, error) {
+func (s *Server) Upgrade(ctx *gin.Context) (*ws.Socket, error) {
 	underWsCon, err := upGrader.Upgrade(ctx.Writer, ctx.Request, ctx.Writer.Header())
 	if err != nil {
 		return nil, err
@@ -283,7 +282,7 @@ func (s *server) Upgrade(ctx *gin.Context) (*ws.Socket, error) {
 	return wsSocket, nil
 }
 
-func (s *server) runTTY(ctx *gin.Context, currentUser *model.User,
+func (s *Server) runTTY(ctx *gin.Context, currentUser *model.User,
 	targetType, targetId, SystemUserID string) {
 	wsSocket, err := s.Upgrade(ctx)
 	if err != nil {
@@ -312,24 +311,24 @@ func (s *server) runTTY(ctx *gin.Context, currentUser *model.User,
 	userConn.Run()
 }
 
-func (s *server) statusHandler(ctx *gin.Context) {
+func (s *Server) statusHandler(ctx *gin.Context) {
 	status := make(map[string]interface{})
 	status["timestamp"] = time.Now().UTC()
 	ctx.JSON(http.StatusOK, status)
 }
 
-func registerHandlers(s *server) *gin.Engine {
+func registerHandlers(s *Server) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 	eng := gin.New()
 	eng.Use(gin.Recovery())
 	eng.Use(gin.Logger())
 	eng.LoadHTMLGlob("./templates/**/*")
 	rootGroup := eng.Group("")
-	s.healthHandlers(rootGroup)
 	s.debugHandlers(rootGroup)
 
 	kokoGroup := rootGroup.Group("/koko")
 	kokoGroup.Static("/static/", "./static")
+	s.healthHandlers(kokoGroup)
 	{
 		s.websocketHandlers(kokoGroup)
 		s.terminalHandlers(kokoGroup)
@@ -339,7 +338,7 @@ func registerHandlers(s *server) *gin.Engine {
 	return eng
 }
 
-func (s *server) websocketHandlers(router *gin.RouterGroup) {
+func (s *Server) websocketHandlers(router *gin.RouterGroup) {
 	wsGroup := router.Group("/ws/")
 
 	wsGroup.Group("/terminal").Use(
@@ -351,7 +350,7 @@ func (s *server) websocketHandlers(router *gin.RouterGroup) {
 	wsGroup.Group("/token").GET("/", s.processTokenWebsocket)
 }
 
-func (s *server) terminalHandlers(router *gin.RouterGroup) {
+func (s *Server) terminalHandlers(router *gin.RouterGroup) {
 	terminalGroup := router.Group("/terminal")
 	terminalGroup.Use(s.middleSessionAuth())
 	{
@@ -361,7 +360,7 @@ func (s *server) terminalHandlers(router *gin.RouterGroup) {
 	}
 }
 
-func (s *server) tokenHandlers(router *gin.RouterGroup) {
+func (s *Server) tokenHandlers(router *gin.RouterGroup) {
 	tokenGroup := router.Group("/token")
 	{
 		tokenGroup.GET("/", func(ctx *gin.Context) {
@@ -370,7 +369,7 @@ func (s *server) tokenHandlers(router *gin.RouterGroup) {
 	}
 }
 
-func (s *server) elfinderHandlers(router *gin.RouterGroup) {
+func (s *Server) elfinderHandlers(router *gin.RouterGroup) {
 	elfindlerGroup := router.Group("/elfinder")
 	elfindlerGroup.Use(s.middleSessionAuth())
 	{
@@ -389,11 +388,11 @@ func (s *server) elfinderHandlers(router *gin.RouterGroup) {
 	}
 }
 
-func (s *server) healthHandlers(router *gin.RouterGroup) {
-	router.GET("/status/", s.statusHandler)
+func (s *Server) healthHandlers(router *gin.RouterGroup) {
+	router.GET("/health/", s.statusHandler)
 }
 
-func (s *server) debugHandlers(router *gin.RouterGroup) {
+func (s *Server) debugHandlers(router *gin.RouterGroup) {
 	debugGroup := router.Group("/debug/pprof")
 	debugGroup.Use(s.middleDebugAuth())
 	{
@@ -412,12 +411,13 @@ func (s *server) debugHandlers(router *gin.RouterGroup) {
 	}
 }
 
-var webServer = NewServer()
-
-func StartHTTPServer() {
-	webServer.Start()
-}
-
-func StopHTTPServer() {
-	webServer.Stop()
-}
+//var w\
+//ebServer = NewServer()
+//
+//func StartHTTPServer() {
+//	webServer.Start()
+//}
+//
+//func StopHTTPServer() {
+//	webServer.Stop()
+//}
