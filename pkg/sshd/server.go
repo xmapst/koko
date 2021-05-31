@@ -2,13 +2,14 @@ package sshd
 
 import (
 	"context"
-	"log"
 	"net"
 	"time"
 
 	"github.com/gliderlabs/ssh"
 	"github.com/pires/go-proxyproto"
 	gossh "golang.org/x/crypto/ssh"
+
+	"github.com/jumpserver/koko/pkg/logger"
 )
 
 
@@ -23,23 +24,24 @@ type Server struct {
 }
 
 func (s *Server) Start() {
+	logger.Infof("Start SSH server at %s",  s.Srv.Addr)
 	ln, err := net.Listen("tcp", s.Srv.Addr)
 	if err != nil {
-		log.Fatalln(err)
+		logger.Fatal(err)
 	}
 	proxyListener := &proxyproto.Listener{Listener: ln}
-	log.Println(s.Srv.Serve(proxyListener))
+	logger.Fatal(s.Srv.Serve(proxyListener))
 }
 
 func (s *Server) Stop()  {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelFunc()
-	log.Println(s.Srv.Shutdown(ctx))
+	logger.Fatal(s.Srv.Shutdown(ctx))
 }
 
 type SSHHandler interface {
-	GetAddr() string
-	GetSigner() ssh.Signer
+	GetSSHAddr() string
+	GetSSHSigner() ssh.Signer
 	KeyboardInteractiveAuth(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) AuthStatus
 	PasswordAuth(ctx ssh.Context, password string) AuthStatus
 	PublicKeyHandler(ctx ssh.Context, key ssh.PublicKey) AuthStatus
@@ -63,7 +65,7 @@ func NewSSHServer(handler SSHHandler) *Server {
 		LocalPortForwardingCallback: func(ctx ssh.Context, destinationHost string, destinationPort uint32) bool {
 			return handler.LocalPortForwardingPermission(ctx, destinationHost, destinationPort)
 		},
-		Addr: handler.GetAddr(),
+		Addr: handler.GetSSHAddr(),
 		KeyboardInteractiveHandler: func(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) ssh.AuthResult {
 			//auth.CheckMFA()
 			return ssh.AuthResult(handler.KeyboardInteractiveAuth(ctx, challenger))
@@ -80,10 +82,10 @@ func NewSSHServer(handler SSHHandler) *Server {
 			//auth.MFAAuthMethods
 			return handler.NextAuthMethodsHandler(ctx)
 		},
-		HostSigners: []ssh.Signer{handler.GetSigner()},
-		Handler:     func(s ssh.Session) { handler.SessionHandler(s) },
+		HostSigners: []ssh.Signer{handler.GetSSHSigner()},
+		Handler:     handler.SessionHandler,
 		SubsystemHandlers: map[string]ssh.SubsystemHandler{
-			sshSubSystemSFTP: func(s ssh.Session) { handler.SFTPHandler(s) },
+			sshSubSystemSFTP: handler.SFTPHandler,
 		},
 		ChannelHandlers: map[string]ssh.ChannelHandler{
 			sshChannelSession: ssh.DefaultSessionHandler,

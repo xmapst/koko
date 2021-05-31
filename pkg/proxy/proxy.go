@@ -121,7 +121,7 @@ func (p *ProxyServer) validatePermission() bool {
 func (p *ProxyServer) getSSHConn() (srvConn *srvconn.ServerSSHConnection, err error) {
 	conf := config.GetConf()
 	newClient, err := srvconn.NewClient(p.User, p.Asset, p.SystemUser,
-		conf.SSHTimeout*time.Second, conf.ReuseConnection)
+		time.Duration(conf.SSHTimeout)*time.Second, conf.ReuseConnection)
 	if err != nil {
 		logger.Errorf("Conn[%s] create ssh client (%s@%s) err: %s",
 			p.UserConn.ID(), p.SystemUser.Name, p.Asset.Hostname, err)
@@ -233,7 +233,7 @@ func (p *ProxyServer) getServerConn() (srvConn srvconn.ServerConnection, err err
 		utils.IgnoreErrWriteString(p.UserConn, "\r\n")
 		close(done)
 	}()
-	go p.sendConnectingMsg(done, config.GetConf().SSHTimeout*time.Second)
+	go p.sendConnectingMsg(done, time.Duration(config.GetConf().SSHTimeout)*time.Second)
 	if p.SystemUser.Protocol == "telnet" {
 		return p.getTelnetConn()
 	} else {

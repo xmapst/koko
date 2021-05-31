@@ -216,7 +216,7 @@ func NewAssetDir(user *model.User, asset model.Asset, addr string, logChan chan<
 		addr:        addr,
 		suMaps:      nil,
 		logChan:     logChan,
-		Overtime:    conf.SSHTimeout * time.Second,
+		Overtime:    time.Duration(conf.SSHTimeout) * time.Second,
 		ShowHidden:  conf.ShowHiddenFile,
 		reuse:       conf.ReuseConnection,
 		sftpClients: map[string]*SftpConn{},

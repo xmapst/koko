@@ -42,7 +42,7 @@ type Config struct {
 	// Defaults to 10.
 	MaxActive int
 
-	DBIndex uint64
+	DBIndex int
 }
 
 func newRedisManager(cfg Config) (*redisRoomManager, error) {

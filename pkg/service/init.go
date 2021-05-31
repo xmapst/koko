@@ -17,11 +17,11 @@ var authClient = common.NewClient(30, "")
 
 func Initial(ctx context.Context) {
 	cf := config.GetConf()
-	keyPath := cf.AccessKeyFile
+	keyPath := cf.AccessKeyFilePath
 	authClient.BaseHost = cf.CoreHost
 	authClient.SetHeader("X-JMS-ORG", "ROOT")
 
-	if !path.IsAbs(cf.AccessKeyFile) {
+	if !path.IsAbs(cf.AccessKeyFilePath) {
 		keyPath = filepath.Join(cf.RootPath, keyPath)
 	}
 	ak := AccessKey{Value: cf.AccessKey, Path: keyPath}
@@ -59,7 +59,7 @@ func validateAccessAuth() {
 		}
 		if err != nil {
 			msg := "Connect server error or access key is invalid, remove %s run again"
-			logger.Errorf(msg, cf.AccessKeyFile)
+			logger.Errorf(msg, cf.AccessKeyFilePath)
 		} else if user.Role != "App" {
 			logger.Error("Access role is not App, is: ", user.Role)
 		}
@@ -93,12 +93,12 @@ func MustLoadServerConfigOnce() {
 }
 
 func LoadConfigFromServer() (err error) {
-	conf := config.GetConf()
-	_, err = authClient.Get(TerminalConfigURL, &conf)
-	if err != nil {
-		return err
-	}
-	config.SetConf(conf)
+	//conf := config.GetConf()
+	//_, err = authClient.Get(TerminalConfigURL, &conf)
+	//if err != nil {
+	//	return err
+	//}
+	//config.SetConf(conf)
 	return nil
 }
 
@@ -121,8 +121,8 @@ func KeepSyncConfigWithServer(ctx context.Context) {
 
 func registerNewAccessKey() {
 	cf := config.GetConf()
-	keyPath := cf.AccessKeyFile
-	if !path.IsAbs(cf.AccessKeyFile) {
+	keyPath := cf.AccessKeyFilePath
+	if !path.IsAbs(cf.AccessKeyFilePath) {
 		keyPath = filepath.Join(cf.RootPath, keyPath)
 	}
 	ak := AccessKey{Path: keyPath}

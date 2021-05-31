@@ -15,7 +15,6 @@ import (
 	"github.com/jumpserver/koko/pkg/common"
 	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/i18n"
-	JMSModel "github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/service"
@@ -60,7 +59,7 @@ type interactiveHandler struct {
 
 	selectHandler *UserSelectHandler
 
-	nodes JMSModel.NodeList
+	nodes model.NodeList
 
 	assetLoadPolicy string
 
@@ -254,8 +253,8 @@ func (h *interactiveHandler) loadUserNodes() {
 	h.nodes = service.GetUserNodes(h.user.ID)
 }
 
-func ConstructNodeTree(assetNodes []JMSModel.Node) treeprint.Tree {
-	JMSModel.SortNodesByKeyAndName(assetNodes)
+func ConstructNodeTree(assetNodes []model.Node) treeprint.Tree {
+	model.SortNodesByKeyAndName(assetNodes)
 	var treeMap = map[string]treeprint.Tree{}
 	tree := treeprint.New()
 	for i := 0; i < len(assetNodes); i++ {

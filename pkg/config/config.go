@@ -42,10 +42,10 @@ type Config struct {
 	RedisDBIndex  int      `yaml:"REDIS_DB_ROOM"`
 	RedisClusters []string `yaml:"REDIS_CLUSTERS"`
 
-	EnableLocalPortForward bool `json:"ENABLE_LOCAL_PORT_FORWARD"`
+	EnableLocalPortForward bool `yaml:"ENABLE_LOCAL_PORT_FORWARD"`
 
-	LogDirPath    string
-	AccessKeyFile string
+	LogDirPath        string
+	AccessKeyFilePath string
 }
 
 func (c *Config) EnsureConfigValid() {
@@ -178,25 +178,25 @@ func getDefaultConfig() Config {
 		}
 	}
 	return Config{
-		Name:                defaultName,
-		CoreHost:            "http://localhost:8080",
-		BootstrapToken:      "",
-		BindHost:            "0.0.0.0",
-		SSHPort:             "2222",
-		SSHTimeout:          15,
-		HTTPPort:            "5000",
-		AccessKey:           "",
-		AccessKeyFile:       accessKeyFilePath,
-		LogLevel:            "INFO",
-		RootPath:            rootPath,
-		LogDirPath:          LogDirPath,
-		Comment:             "KOKO",
-		UploadFailedReplay:  true,
-		ShowHiddenFile:      false,
-		ReuseConnection:     true,
-		AssetLoadPolicy:     "",
-		ZipMaxSize:          "1024M",
-		ZipTmpPath:          "/tmp",
+		Name:               defaultName,
+		CoreHost:           "http://localhost:8080",
+		BootstrapToken:     "",
+		BindHost:           "0.0.0.0",
+		SSHPort:            "2222",
+		SSHTimeout:         15,
+		HTTPPort:           "5000",
+		AccessKey:          "",
+		AccessKeyFilePath:  accessKeyFilePath,
+		LogLevel:           "INFO",
+		RootPath:           rootPath,
+		LogDirPath:         LogDirPath,
+		Comment:            "KOKO",
+		UploadFailedReplay: true,
+		ShowHiddenFile:     false,
+		ReuseConnection:    true,
+		AssetLoadPolicy:    "",
+		ZipMaxSize:         "1024M",
+		ZipTmpPath:         "/tmp",
 		ClientAliveInterval: 30,
 		RetryAliveCountMax:  3,
 		ShareRoomType:       "local",

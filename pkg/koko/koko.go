@@ -2,8 +2,8 @@ package koko
 
 import (
 	"context"
+	"errors"
 	"fmt"
-
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,36 +16,34 @@ import (
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/sshd"
 
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/jms-sdk-go/service"
-
-
 )
 
 var Version = "unknown"
 
-type Application struct {
-	webServer *httpd.Server
-	sshServer *sshd.Server
+type Koko struct {
+	webServer  *httpd.Server
+	sshServer  *sshd.Server
 	jmsService *service.JMService
 	roomManger exchange.RoomManager
-	conf *config.Config
 }
 
 const (
 	timeFormat = "2006-01-02 15:04:05"
-	startMsg = `%s
+	startMsg   = `%s
 KoKo Version %s, more see https://www.jumpserver.org
 Quit the server with CONTROL-C.
 `
 )
 
-func (a *Application) Start() {
+func (a *Koko) Start() {
 	fmt.Printf(startMsg, time.Now().Format(timeFormat), Version)
 	go a.webServer.Start()
 	go a.sshServer.Start()
 }
 
-func (a *Application) Stop() {
+func (a *Koko) Stop() {
 	a.sshServer.Stop()
 	a.webServer.Stop()
 	logger.Info("Quit The KoKo")
@@ -53,30 +51,108 @@ func (a *Application) Stop() {
 
 func RunForever(confPath string) {
 	ctx, cancelFunc := context.WithCancel(context.Background())
-	config.Initial(confPath)
+	config.Setup(confPath)
+	i18n.Initial()
+	logger.Initial()
 	bootstrap(ctx)
 	gracefulStop := make(chan os.Signal, 1)
 	signal.Notify(gracefulStop, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
-	app := NewApp()
-	app.Start()
+	jmsService := MustJMService()
+	app := NewApplication(jmsService)
+
+	webSrv := httpd.NewServer()
+	sshSrv := sshd.NewSSHServer(app)
+	srv := &Koko{
+		webServer: webSrv,
+		sshServer: sshSrv,
+	}
+	srv.Start()
 	<-gracefulStop
 	cancelFunc()
-	app.Stop()
+	srv.Stop()
 }
 
 func bootstrap(ctx context.Context) {
-	i18n.Initial()
-	logger.Initial()
+
 	//service.Initial(ctx)
 	//exchange.Initial(ctx)
 	Initial()
 }
 
-func NewApp() *Application {
-	webSrv := httpd.NewServer()
-	sshSrv := sshd.NewSSHServer(nil)
-	return &Application{
-		webServer: webSrv,
-		sshServer: sshSrv,
+func NewApplication(jmsService *service.JMService) *Application {
+	terminalConf, err := jmsService.GetTerminalConfig()
+	if err != nil {
+		logger.Fatal(err)
 	}
+	app := Application{
+		terminalConf: &terminalConf,
+	}
+
+	return &app
+}
+
+func MustJMService() *service.JMService {
+	key := MustLoadValidAccessKey()
+	jmsService, err := service.NewAuthJMService(service.JMSCoreHost(
+		config.GlobalConfig.CoreHost), service.JMSTimeOut(30*time.Second),
+		service.JMSAccessKey(key.ID, key.Secret),
+	)
+	if err != nil {
+		logger.Fatal("创建JMS Service 失败 " + err.Error())
+		os.Exit(1)
+	}
+	return jmsService
+}
+
+func MustLoadValidAccessKey() model.AccessKey {
+	conf := config.GlobalConfig
+	var key model.AccessKey
+	if err := key.LoadFromFile(conf.AccessKeyFilePath); err != nil {
+		return MustRegisterTerminalAccount()
+	}
+	// 校验accessKey
+	return MustValidKey(key)
+}
+
+func MustRegisterTerminalAccount() (key model.AccessKey) {
+	conf := config.GlobalConfig
+	for i := 0; i < 10; i++ {
+		terminal, err := service.RegisterTerminalAccount(conf.CoreHost,
+			conf.Name, conf.BootstrapToken)
+		if err != nil {
+			logger.Error(err.Error())
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		key.ID = terminal.ServiceAccount.AccessKey.ID
+		key.Secret = terminal.ServiceAccount.AccessKey.Secret
+		if err := key.SaveToFile(conf.AccessKeyFilePath); err != nil {
+			logger.Error("保存key失败: " + err.Error())
+		}
+		return key
+	}
+	logger.Error("注册终端失败退出")
+	os.Exit(1)
+	return
+}
+
+func MustValidKey(key model.AccessKey) model.AccessKey {
+	conf := config.GlobalConfig
+	for i := 0; i < 10; i++ {
+		if err := service.ValidAccessKey(conf.CoreHost, key); err != nil {
+			switch {
+			case errors.Is(err, service.ErrUnauthorized):
+				logger.Error("Access key unauthorized, try to register new access key")
+				return MustRegisterTerminalAccount()
+			default:
+				logger.Error("校验 access key failed: " + err.Error())
+			}
+			time.Sleep(5 * time.Second)
+			continue
+		}
+		return key
+	}
+	logger.Error("校验 access key failed退出")
+	os.Exit(1)
+	return key
 }
