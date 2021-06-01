@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"github.com/jumpserver/koko/pkg/exchange"
 	"time"
 
 	"github.com/jumpserver/koko/pkg/model"
@@ -18,7 +19,7 @@ type proxyEngine interface {
 }
 
 type ParseEngine interface {
-	ParseStream(userInChan chan *model.RoomMessage, srvInChan <-chan []byte) (userOut, srvOut <-chan []byte)
+	ParseStream(userInChan chan *exchange.RoomMessage, srvInChan <-chan []byte) (userOut, srvOut <-chan []byte)
 
 	Close()
 

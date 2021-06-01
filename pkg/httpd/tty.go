@@ -8,10 +8,10 @@ import (
 	"github.com/gliderlabs/ssh"
 
 	"github.com/jumpserver/koko/pkg/exchange"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/service"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/proxy"
-	"github.com/jumpserver/koko/pkg/service"
 )
 
 var _ Handler = (*tty)(nil)
@@ -31,6 +31,8 @@ type tty struct {
 	dbApp      *model.DatabaseApplication
 
 	backendClient *Client
+
+	jmsService *service.JMService
 }
 
 func (h *tty) Name() string {
@@ -52,14 +54,19 @@ func (h *tty) CheckValidation() bool {
 			logger.Errorf("Ws[%s] miss required query params.", h.ws.Uuid)
 			return false
 		}
-		systemUser := service.GetSystemUser(h.systemUserId)
+		systemUser, err := h.jmsService.GetSystemUserById(h.systemUserId)
+		if err != nil {
+			logger.Errorf("Ws[%s] get system user err: %s", h.ws.Uuid, err)
+			return false
+		}
 		if systemUser.ID == "" {
+			logger.Errorf("Ws[%s] get invalid system user", h.ws.Uuid)
 			return false
 		}
 		h.systemUser = &systemUser
 		ok = h.getApp()
 	case TargetTypeRoom:
-		ok = CheckShareRoomReadPerm(h.ws.user.ID, h.targetId)
+		ok = h.CheckShareRoomReadPerm(h.ws.user.ID, h.targetId)
 	}
 	logger.Infof("Ws[%s] check connect type %s: %t", h.ws.Uuid, h.targetType, ok)
 	return ok
@@ -139,19 +146,29 @@ func (h *tty) handleTerminalMessage(msg *Message) {
 func (h *tty) getApp() bool {
 	switch h.getAppType() {
 	case AppTypeDB:
-		databaseAsset := service.GetMySQLApplication(h.targetId)
+		databaseAsset, err := h.jmsService.GetMySQLApplicationById(h.targetId)
+		if err != nil {
+			logger.Errorf("")
+			return false
+		}
 		if databaseAsset.Id != "" {
 			h.dbApp = &databaseAsset
 			return true
 		}
 	case AppTypeK8s:
-		k8sCluster := service.GetK8sApplication(h.targetId)
+		k8sCluster, err := h.jmsService.GetK8sApplicationById(h.targetId)
+		if err != nil {
+			return false
+		}
 		if k8sCluster.Id != "" {
 			h.k8sApp = &k8sCluster
 			return true
 		}
 	case AppTypeAsset:
-		asset := service.GetAsset(h.targetId)
+		asset, err := h.jmsService.GetAssetById(h.targetId)
+		if err != nil {
+			return false
+		}
 		if asset.ID != "" {
 			h.assetApp = &asset
 			return true
@@ -181,28 +198,28 @@ func (h *tty) proxy(wg *sync.WaitGroup) {
 		switch h.getAppType() {
 		case AppTypeDB:
 			proxySrv = &proxy.DBProxyServer{
-				UserConn:   h.backendClient,
-				User:       h.ws.CurrentUser(),
-				Database:   h.dbApp,
-				SystemUser: h.systemUser,
+				UserConn: h.backendClient,
+				//User:       h.ws.CurrentUser(),
+				//Database:   h.dbApp,
+				//SystemUser: h.systemUser,
 			}
 		case AppTypeK8s:
 			proxySrv = &proxy.K8sProxyServer{
-				UserConn:   h.backendClient,
-				User:       h.ws.CurrentUser(),
-				Cluster:    h.k8sApp,
-				SystemUser: h.systemUser,
+				UserConn: h.backendClient,
+				//User:       h.ws.CurrentUser(),
+				//Cluster:    h.k8sApp,
+				//SystemUser: h.systemUser,
 			}
 		case AppTypeAsset:
 			proxySrv = &proxy.ProxyServer{
-				UserConn:   h.backendClient,
-				User:       h.ws.CurrentUser(),
-				Asset:      h.assetApp,
-				SystemUser: h.systemUser,
+				UserConn: h.backendClient,
+				//User:       h.ws.CurrentUser(),
+				//Asset:      h.assetApp,
+				//SystemUser: h.systemUser,
 			}
 		}
 	case TargetTypeRoom:
-		JoinRoom(h.backendClient, h.targetId)
+		h.JoinRoom(h.backendClient, h.targetId)
 	default:
 		return
 	}
@@ -216,16 +233,24 @@ type proxyServer interface {
 	Proxy()
 }
 
-func CheckShareRoomReadPerm(uerId, roomId string) bool {
-	return service.JoinRoomValidate(uerId, roomId)
+func (h *tty) CheckShareRoomReadPerm(uerId, roomId string) bool {
+	ret, err := h.jmsService.ValidateJoinSessionPermission(uerId, roomId)
+	if err != nil {
+		return false
+	}
+	if !ret.Ok {
+
+		return false
+	}
+	return true
 }
 
-func CheckShareRoomWritePerm(uid, roomId string) bool {
+func (h *tty) CheckShareRoomWritePerm(uid, roomId string) bool {
 	// todo: check current user has pem to write
 	return false
 }
 
-func JoinRoom(c *Client, roomID string) {
+func (h *tty) JoinRoom(c *Client, roomID string) {
 	/*
 		1. ask join room id (session id)
 		2. room receive msg send to client
@@ -238,9 +263,9 @@ func JoinRoom(c *Client, roomID string) {
 		for {
 			buf := make([]byte, 1024)
 			nr, err := c.Read(buf)
-			if nr > 0 && CheckShareRoomWritePerm(c.Conn.user.ID, roomID) {
-				room.Receive(&model.RoomMessage{
-					Event: model.DataEvent, Body: buf[:nr]})
+			if nr > 0 && h.CheckShareRoomWritePerm(c.Conn.user.ID, roomID) {
+				room.Receive(&exchange.RoomMessage{
+					Event: exchange.DataEvent, Body: buf[:nr]})
 			}
 			if err != nil {
 				break

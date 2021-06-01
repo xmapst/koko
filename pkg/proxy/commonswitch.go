@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/jumpserver/koko/pkg/common"
 	"github.com/jumpserver/koko/pkg/exchange"
@@ -23,7 +22,7 @@ func NewCommonSwitch(p proxyEngine) *commonSwitch {
 	ctx, cancel := context.WithCancel(context.Background())
 	MaxIdleTime := time.Duration(30)
 	c := commonSwitch{
-		ID:        uuid.NewV4().String(),
+		ID:        common.UUID(),
 		DateStart: common.CurrentUTCTime(),
 		//MaxIdleTime:   config.GetConf().MaxIdleTime,
 		MaxIdleTime:   MaxIdleTime, // todo: 最大空闲时间
@@ -131,7 +130,7 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 	logger.Infof("Conn[%s] create replay success", userConn.ID())
 	srvInChan := make(chan []byte, 1)
 	done := make(chan struct{})
-	userInputMessageChan := make(chan *model.RoomMessage, 1)
+	userInputMessageChan := make(chan *exchange.RoomMessage, 1)
 	// 处理数据流
 	userOutChan, srvOutChan := parser.ParseStream(userInputMessageChan, srvInChan)
 
@@ -202,14 +201,14 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 					return r == '\r' || r == '\n'
 				})
 				if index <= 0 || !parser.NeedRecord() {
-					room.Receive(&model.RoomMessage{
-						Event: model.DataEvent, Body: buf[:nr]})
+					room.Receive(&exchange.RoomMessage{
+						Event: exchange.DataEvent, Body: buf[:nr]})
 				} else {
-					room.Receive(&model.RoomMessage{
-						Event: model.DataEvent, Body: buf[:index]})
+					room.Receive(&exchange.RoomMessage{
+						Event: exchange.DataEvent, Body: buf[:index]})
 					time.Sleep(time.Millisecond * 100)
-					room.Receive(&model.RoomMessage{
-						Event: model.DataEvent, Body: buf[index:nr]})
+					room.Receive(&exchange.RoomMessage{
+						Event: exchange.DataEvent, Body: buf[index:nr]})
 				}
 
 			}
@@ -234,7 +233,7 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 				logger.Infof("Session[%s] idle more than %d minutes, disconnect", s.ID, s.MaxIdleTime)
 				msg = utils.WrapperWarn(msg)
 				replayRecorder.Record([]byte(msg))
-				room.Broadcast(&model.RoomMessage{Event: model.DataEvent, Body: []byte("\n\r" + msg)})
+				room.Broadcast(&exchange.RoomMessage{Event: exchange.DataEvent, Body: []byte("\n\r" + msg)})
 				return
 			}
 			if s.p.CheckPermissionExpired(now) {
@@ -242,7 +241,7 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 				logger.Infof("Session[%s] permission has expired, disconnect", s.ID)
 				msg = utils.WrapperWarn(msg)
 				replayRecorder.Record([]byte(msg))
-				room.Broadcast(&model.RoomMessage{Event: model.DataEvent, Body: []byte("\n\r" + msg)})
+				room.Broadcast(&exchange.RoomMessage{Event: exchange.DataEvent, Body: []byte("\n\r" + msg)})
 				return
 			}
 			continue
@@ -252,7 +251,7 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 			msg = utils.WrapperWarn(msg)
 			replayRecorder.Record([]byte(msg))
 			logger.Infof("Session[%s]: %s", s.ID, msg)
-			room.Broadcast(&model.RoomMessage{Event: model.DataEvent, Body: []byte("\n\r" + msg)})
+			room.Broadcast(&exchange.RoomMessage{Event: exchange.DataEvent, Body: []byte("\n\r" + msg)})
 			return
 			// 监控窗口大小变化
 		case win, ok := <-winCh:
@@ -263,8 +262,8 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 			logger.Infof("Session[%s] Window server change: %d*%d",
 				s.ID, win.Width, win.Height)
 			p, _ := json.Marshal(win)
-			msg := model.RoomMessage{
-				Event: model.WindowsEvent,
+			msg := exchange.RoomMessage{
+				Event: exchange.WindowsEvent,
 				Body:  p,
 			}
 			room.Broadcast(&msg)
@@ -276,8 +275,8 @@ func (s *commonSwitch) Bridge(userConn UserConnection, srvConn srvconn.ServerCon
 			if parser.NeedRecord() {
 				replayRecorder.Record(p)
 			}
-			msg := model.RoomMessage{
-				Event: model.DataEvent,
+			msg := exchange.RoomMessage{
+				Event: exchange.DataEvent,
 				Body:  p,
 			}
 			room.Broadcast(&msg)

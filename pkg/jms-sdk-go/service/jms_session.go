@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-
 	"github.com/jumpserver/koko/pkg/jms-sdk-go/common"
 	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 )
@@ -37,11 +36,7 @@ func (s *JMService) SessionFailed(sid string, err error) error {
 	return s.sessionPatch(sid, data)
 }
 func (s *JMService) SessionDisconnect(sid string) error {
-	data := map[string]interface{}{
-		"is_finished": true,
-		"date_end":    common.NewNowUTCTime(),
-	}
-	return s.sessionPatch(sid, data)
+	return s.SessionFinished(sid, common.NewNowUTCTime())
 }
 
 func (s *JMService) SessionFinished(sid string, time common.UTCTime) error {

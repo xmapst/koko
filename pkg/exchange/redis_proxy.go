@@ -5,10 +5,9 @@ import (
 	"time"
 
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 )
 
-func proxyRoom(room *Room, ch *redisChannel, userInputCh chan *model.RoomMessage) {
+func proxyRoom(room *Room, ch *redisChannel, userInputCh chan *RoomMessage) {
 	// todo : 获取超时时间
 	//maxIdleTime := config.GetConf().MaxIdleTime
 	tick := time.NewTicker(time.Second * 30)
@@ -48,7 +47,7 @@ func proxyRoom(room *Room, ch *redisChannel, userInputCh chan *model.RoomMessage
 				logger.Infof("Redis room %s stop receive message", ch.roomId)
 				return
 			}
-			var msg model.RoomMessage
+			var msg RoomMessage
 			if err := json.Unmarshal(redisMsg.Message, &msg); err != nil {
 				logger.Errorf("Redis proxy room %s message unmarshal err: %s", ch.roomId, err)
 				continue
@@ -89,7 +88,7 @@ func proxyUserCon(room *Room, ch *redisChannel) {
 				logger.Infof("Redis proxy userCon for room %s stop receive message", ch.roomId)
 				return
 			}
-			var msg model.RoomMessage
+			var msg RoomMessage
 			_ = json.Unmarshal(redisMsg.Message, &msg)
 			room.Receive(&msg)
 		}

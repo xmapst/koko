@@ -2,7 +2,9 @@ package sshd
 
 import (
 	"context"
+	"fmt"
 	"net"
+	"strconv"
 	"time"
 
 	"github.com/gliderlabs/ssh"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/jumpserver/koko/pkg/logger"
 )
-
 
 const (
 	sshChannelSession     = "session"
@@ -24,7 +25,7 @@ type Server struct {
 }
 
 func (s *Server) Start() {
-	logger.Infof("Start SSH server at %s",  s.Srv.Addr)
+	logger.Infof("Start SSH server at %s", s.Srv.Addr)
 	ln, err := net.Listen("tcp", s.Srv.Addr)
 	if err != nil {
 		logger.Fatal(err)
@@ -33,7 +34,7 @@ func (s *Server) Start() {
 	logger.Fatal(s.Srv.Serve(proxyListener))
 }
 
-func (s *Server) Stop()  {
+func (s *Server) Stop() {
 	ctx, cancelFunc := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancelFunc()
 	logger.Fatal(s.Srv.Shutdown(ctx))
@@ -67,19 +68,15 @@ func NewSSHServer(handler SSHHandler) *Server {
 		},
 		Addr: handler.GetSSHAddr(),
 		KeyboardInteractiveHandler: func(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) ssh.AuthResult {
-			//auth.CheckMFA()
 			return ssh.AuthResult(handler.KeyboardInteractiveAuth(ctx, challenger))
 		},
 		PasswordHandler: func(ctx ssh.Context, password string) ssh.AuthResult {
-			//auth.CheckUserPassword
 			return ssh.AuthResult(handler.PasswordAuth(ctx, password))
 		},
 		PublicKeyHandler: func(ctx ssh.Context, key ssh.PublicKey) ssh.AuthResult {
-			//auth.CheckUserPublicKey
 			return ssh.AuthResult(handler.PublicKeyHandler(ctx, key))
 		},
 		NextAuthMethodsHandler: func(ctx ssh.Context) []string {
-			//auth.MFAAuthMethods
 			return handler.NextAuthMethodsHandler(ctx)
 		},
 		HostSigners: []ssh.Signer{handler.GetSSHSigner()},
@@ -90,58 +87,31 @@ func NewSSHServer(handler SSHHandler) *Server {
 		ChannelHandlers: map[string]ssh.ChannelHandler{
 			sshChannelSession: ssh.DefaultSessionHandler,
 			sshChannelDirectTCPIP: func(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
+				localD := localForwardChannelData{}
+				if err := gossh.Unmarshal(newChan.ExtraData(), &localD); err != nil {
+					_ = newChan.Reject(gossh.ConnectionFailed, "error parsing forward data: "+err.Error())
+					return
+				}
+
+				if srv.LocalPortForwardingCallback == nil || !srv.LocalPortForwardingCallback(ctx, localD.DestAddr, localD.DestPort) {
+					_ = newChan.Reject(gossh.Prohibited, "port forwarding is disabled")
+					return
+				}
+				dest := net.JoinHostPort(localD.DestAddr, strconv.FormatInt(int64(localD.DestPort), 10))
 				handler.DirectTCPIPChannelHandler(srv, conn, newChan, ctx)
+				fmt.Println(dest)
 			},
 		},
 	}
 	return &Server{srv}
 }
 
-//func StartServer() {
-//	handler.Initial()
-//	conf := config.GetConf()
-//	hostKey := HostKey{Path: conf.HostKeyFile}
-//	logger.Debug("Loading host key")
-//	signer, err := hostKey.Load()
-//	if err != nil {
-//		logger.Fatal("Load host key error: ", err)
-//	}
-//
-//	addr := net.JoinHostPort(conf.BindHost, conf.SSHPort)
-//	logger.Infof("Start SSH server at %s", addr)
-//	sshServer = &ssh.Server{
-//		LocalPortForwardingCallback: func(ctx ssh.Context, destinationHost string, destinationPort uint32) bool {
-//			return true
-//		},
-//		Addr:                       addr,
-//		KeyboardInteractiveHandler: auth.CheckMFA,
-//		PasswordHandler:            auth.CheckUserPassword,
-//		PublicKeyHandler:           auth.CheckUserPublicKey,
-//		NextAuthMethodsHandler:     auth.MFAAuthMethods,
-//		HostSigners:                []ssh.Signer{signer},
-//		Handler:                    handler.SessionHandler,
-//		SubsystemHandlers: map[string]ssh.SubsystemHandler{
-//			sshSubSystemSFTP: handler.SftpHandler,
-//		},
-//		ChannelHandlers: map[string]ssh.ChannelHandler{
-//			sshChannelSession: ssh.DefaultSessionHandler,
-//			sshChannelDirectTCPIP: func(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
-//				ssh.DirectTCPIPHandler(srv, conn, newChan, ctx)
-//			},
-//		},
-//	}
-//	ln, err := net.Listen("tcp", addr)
-//	if err != nil {
-//		logger.Fatal(err)
-//	}
-//	proxyListener := &proxyproto.Listener{Listener: ln}
-//	logger.Fatal(sshServer.Serve(proxyListener))
-//}
-//
-//func StopServer() {
-//	err := sshServer.Close()
-//	if err != nil {
-//		logger.Errorf("SSH server close failed: %s", err.Error())
-//	}
-//	logger.Info("Close ssh server")
-//}
+
+
+type localForwardChannelData struct {
+	DestAddr string
+	DestPort uint32
+
+	OriginAddr string
+	OriginPort uint32
+}

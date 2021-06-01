@@ -73,3 +73,7 @@ func (s *JMService) GetTerminalConfig() (conf model.TerminalConfig, err error) {
 	_, err = s.authClient.Get(TerminalConfigURL, &conf)
 	return
 }
+
+func (s *JMService) CloneClient() httplib.Client {
+	return s.authClient.Clone()
+}

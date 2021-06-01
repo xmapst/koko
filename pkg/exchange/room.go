@@ -24,11 +24,11 @@ var (
 	_ RoomManager = (*redisRoomManager)(nil)
 )
 
-func CreateRoom(id string, inChan chan *model.RoomMessage) *Room {
+func CreateRoom(id string, inChan chan *RoomMessage) *Room {
 	s := &Room{
 		Id:             id,
 		userInputChan:  inChan,
-		broadcastChan:  make(chan *model.RoomMessage),
+		broadcastChan:  make(chan *RoomMessage),
 		subscriber:     make(chan *Conn),
 		unSubscriber:   make(chan *Conn),
 		exitSignal:     make(chan struct{}),
@@ -41,9 +41,9 @@ func CreateRoom(id string, inChan chan *model.RoomMessage) *Room {
 type Room struct {
 	Id string
 
-	userInputChan chan *model.RoomMessage
+	userInputChan chan *RoomMessage
 
-	broadcastChan chan *model.RoomMessage
+	broadcastChan chan *RoomMessage
 
 	subscriber chan *Conn
 
@@ -120,21 +120,21 @@ func (r *Room) UnSubscribe(conn *Conn) {
 	r.unSubscriber <- conn
 }
 
-func (r *Room) Broadcast(msg *model.RoomMessage) {
+func (r *Room) Broadcast(msg *RoomMessage) {
 	select {
 	case <-r.done:
 	case r.broadcastChan <- msg:
 	}
 }
 
-func (r *Room) Receive(msg *model.RoomMessage) {
+func (r *Room) Receive(msg *RoomMessage) {
 	select {
 	case <-r.done:
 	case r.userInputChan <- msg:
 	}
 }
 
-func (r *Room) broadcastMessage(conns userConnections, msg *model.RoomMessage) {
+func (r *Room) broadcastMessage(conns userConnections, msg *RoomMessage) {
 	// 减少启动goroutine的数量
 	if len(conns) == 0 {
 		return
@@ -190,7 +190,7 @@ type Conn struct {
 	created time.Time
 }
 
-func (c *Conn) handlerMessage(msg *model.RoomMessage) {
+func (c *Conn) handlerMessage(msg *RoomMessage) {
 	switch msg.Event {
 	case model.DataEvent:
 		_, _ = c.Write(msg.Body)

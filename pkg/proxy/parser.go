@@ -11,6 +11,7 @@ import (
 
 	"github.com/LeeEirc/tclientlib"
 
+	"github.com/jumpserver/koko/pkg/exchange"
 	"github.com/jumpserver/koko/pkg/i18n"
 	"github.com/jumpserver/koko/pkg/logger"
 	"github.com/jumpserver/koko/pkg/model"
@@ -96,7 +97,7 @@ func (p *Parser) initial() {
 }
 
 // ParseStream 解析数据流
-func (p *Parser) ParseStream(userInChan chan *model.RoomMessage, srvInChan <-chan []byte) (userOut, srvOut <-chan []byte) {
+func (p *Parser) ParseStream(userInChan chan *exchange.RoomMessage, srvInChan <-chan []byte) (userOut, srvOut <-chan []byte) {
 
 	p.userOutputChan = make(chan []byte, 1)
 	p.srvOutputChan = make(chan []byte, 1)
@@ -120,7 +121,7 @@ func (p *Parser) ParseStream(userInChan chan *model.RoomMessage, srvInChan <-cha
 				}
 				var b []byte
 				switch msg.Event {
-				case model.DataEvent:
+				case exchange.DataEvent:
 					b = msg.Body
 				}
 				if len(b) == 0 {
@@ -242,7 +243,6 @@ func (p *Parser) parseInputState(b []byte) []byte {
 	}
 	return b
 }
-
 
 func (p *Parser) IsNeedParse() bool {
 	p.lock.Lock()

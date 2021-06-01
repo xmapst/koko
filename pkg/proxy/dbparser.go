@@ -3,6 +3,7 @@ package proxy
 import (
 	"bytes"
 	"fmt"
+	"github.com/jumpserver/koko/pkg/exchange"
 	"strings"
 	"sync"
 
@@ -61,7 +62,7 @@ func (p *DBParser) initial() {
 }
 
 // ParseStream 解析数据流
-func (p *DBParser) ParseStream(userInChan chan *model.RoomMessage, srvInChan <-chan []byte) (userOut, srvOut <-chan []byte) {
+func (p *DBParser) ParseStream(userInChan chan *exchange.RoomMessage, srvInChan <-chan []byte) (userOut, srvOut <-chan []byte) {
 
 	p.userOutputChan = make(chan []byte, 1)
 	p.srvOutputChan = make(chan []byte, 1)
@@ -85,7 +86,7 @@ func (p *DBParser) ParseStream(userInChan chan *model.RoomMessage, srvInChan <-c
 				}
 				var b []byte
 				switch msg.Event {
-				case model.DataEvent:
+				case exchange.DataEvent:
 					b = msg.Body
 				}
 				b = p.ParseUserInput(b)
