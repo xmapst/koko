@@ -4,7 +4,7 @@ import (
 	"github.com/jumpserver/koko/pkg/exchange"
 	"time"
 
-	"github.com/jumpserver/koko/pkg/model"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 
 )
 

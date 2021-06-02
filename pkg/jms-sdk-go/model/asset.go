@@ -36,6 +36,15 @@ func (a *Asset) ProtocolPort(protocol string) int {
 	return 0
 }
 
+func (a *Asset) IsSupportProtocol(protocol string) bool {
+	for _, item := range a.Protocols {
+		if strings.Contains(strings.ToLower(item), strings.ToLower(protocol)) {
+			return true
+		}
+	}
+	return false
+}
+
 type Gateway struct {
 	ID         string `json:"id"`
 	Name       string `json:"Name"`
@@ -52,3 +61,10 @@ type Domain struct {
 	Gateways []Gateway `json:"gateways"`
 	Name     string    `json:"name"`
 }
+
+const (
+	ProtocolSSH    = "ssh"
+	ProtocolTelnet = "telnet"
+	ProtocolK8S    = "k8s"
+	ProtocolMysql  = "mysql"
+)

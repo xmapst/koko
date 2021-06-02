@@ -7,8 +7,8 @@ import (
 
 	"github.com/jumpserver/koko/pkg/exchange"
 	"github.com/jumpserver/koko/pkg/i18n"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/service"
 )
 
@@ -133,8 +133,8 @@ func JoinRoom(h *interactiveHandler, roomId string) {
 			buf := make([]byte, 1024)
 			nr, err := h.sess.Read(buf)
 			if nr > 0 && h.CheckShareRoomWritePerm(roomId) {
-				room.Receive(&model.RoomMessage{
-					Event: model.DataEvent, Body: buf[:nr]})
+				room.Receive(&exchange.RoomMessage{
+					Event: exchange.DataEvent, Body: buf[:nr]})
 			}
 			if err != nil {
 				break

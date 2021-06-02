@@ -68,6 +68,6 @@ func (a *Application) SFTPHandler(ssh.Session) {
 func (a *Application) LocalPortForwardingPermission(ctx ssh.Context, destinationHost string, destinationPort uint32) bool {
 	return config.GlobalConfig.EnableLocalPortForward
 }
-func (a *Application) DirectTCPIPChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context) {
+func (a *Application) DirectTCPIPChannelHandler(ctx ssh.Context, newChan gossh.NewChannel, destAddr string) {
 	// todo vscode 支持
 }

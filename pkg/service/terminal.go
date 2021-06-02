@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/jumpserver/koko/pkg/utils"
 
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 )
 
 func RegisterTerminal(name, token, comment string) (res model.Terminal) {
@@ -21,10 +21,10 @@ func RegisterTerminal(name, token, comment string) (res model.Terminal) {
 
 type HeartbeatData struct {
 	SessionOnlineIds []string `json:"sessions"`
-	SessionOnline int `json:"session_online"`
-	CpuUsed float64 `json:"cpu_load"`
-	MemoryUsed float64 `json:"memory_used"`
-	DiskUsed float64 `json:"disk_used"`
+	SessionOnline    int      `json:"session_online"`
+	CpuUsed          float64  `json:"cpu_load"`
+	MemoryUsed       float64  `json:"memory_used"`
+	DiskUsed         float64  `json:"disk_used"`
 }
 
 func TerminalHeartBeat(sIds []string) (res []model.TerminalTask) {
@@ -111,13 +111,13 @@ func PushSessionCommand(commands []*model.Command) (err error) {
 	return
 }
 
-func PushFTPLog(data *model.FTPLog) (err error) {
-	_, err = authClient.Post(FTPLogListURL, data, nil)
-	if err != nil {
-		logger.Error(err)
-	}
-	return
-}
+//func PushFTPLog(data *model.FTPLog) (err error) {
+//	_, err = authClient.Post(FTPLogListURL, data, nil)
+//	if err != nil {
+//		logger.Error(err)
+//	}
+//	return
+//}
 
 func JoinRoomValidate(userID, sessionID string) bool {
 	data := map[string]string{

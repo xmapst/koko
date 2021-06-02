@@ -10,15 +10,16 @@ import (
 
 	"github.com/gliderlabs/ssh"
 	"github.com/pkg/sftp"
-	uuid "github.com/satori/go.uuid"
 
+	"github.com/jumpserver/koko/pkg/auth"
+	"github.com/jumpserver/koko/pkg/common"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/srvconn"
 )
 
 func SftpHandler(sess ssh.Session) {
-	currentUser, ok := sess.Context().Value(model.ContextKeyUser).(*model.User)
+	currentUser, ok := sess.Context().Value(auth.ContextKeyUser).(*model.User)
 	if !ok || currentUser.ID == "" {
 		logger.Errorf("SFTP User not found, exit.")
 		return
@@ -31,7 +32,7 @@ func SftpHandler(sess ssh.Session) {
 		FileCmd:  userSftp,
 		FileList: userSftp,
 	}
-	reqID := uuid.NewV4().String()
+	reqID := common.UUID()
 	logger.Infof("SFTP request %s: Handler start", reqID)
 	req := sftp.NewRequestServer(sess, handlers)
 	if err := req.Serve(); err == io.EOF {

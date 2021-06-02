@@ -11,8 +11,6 @@ import (
 	"github.com/LeeEirc/elfinder"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	uuid "github.com/satori/go.uuid"
-
 	"github.com/jumpserver/koko/pkg/common"
 	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/httpd/ws"
@@ -196,7 +194,7 @@ func (s *Server) ProcessElfinderWebsocket(ctx *gin.Context) {
 	defer wsSocket.Close()
 
 	userConn := UserWebsocket{
-		Uuid:           uuid.NewV4().String(),
+		Uuid:           common.UUID(),
 		webSrv:         s,
 		conn:           wsSocket,
 		ctx:            ctx.Copy(),

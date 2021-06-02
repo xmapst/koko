@@ -20,3 +20,11 @@ const (
 	OperateDownload = "Download"
 	OperateUpload   = "Upload"
 )
+
+const (
+	OperateRemoveDir = "Rmdir"
+	OperateRename    = "Rename"
+	OperateMkdir     = "Mkdir"
+	OperateDelete    = "Delete"
+	OperateSymlink   = "Symlink"
+)

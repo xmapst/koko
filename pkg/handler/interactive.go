@@ -2,7 +2,6 @@ package handler
 
 import (
 	"fmt"
-
 	"io"
 	"strconv"
 	"strings"
@@ -12,17 +11,18 @@ import (
 	"github.com/gliderlabs/ssh"
 	"github.com/xlab/treeprint"
 
+	"github.com/jumpserver/koko/pkg/auth"
 	"github.com/jumpserver/koko/pkg/common"
 	"github.com/jumpserver/koko/pkg/config"
 	"github.com/jumpserver/koko/pkg/i18n"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/service"
 	"github.com/jumpserver/koko/pkg/utils"
 )
 
 func SessionHandler(sess ssh.Session) {
-	user, ok := sess.Context().Value(model.ContextKeyUser).(*model.User)
+	user, ok := sess.Context().Value(auth.ContextKeyUser).(*model.User)
 	if !ok || user.ID == "" {
 		logger.Errorf("SSH User %s not found, exit.", sess.User())
 		return

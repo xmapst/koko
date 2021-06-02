@@ -11,8 +11,9 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/text/transform"
 
+	"github.com/jumpserver/koko/pkg/common"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 )
 
 type ServerTelnetConnection struct {
@@ -106,11 +107,11 @@ func (tc *ServerTelnetConnection) Connect(h, w int, term string) (err error) {
 	tc.conn = client
 	tc.transformReader = client
 	tc.transformWriter = client
-	if tc.Charset != model.UTF8 {
-		if readDecode := model.LookupCharsetDecode(tc.Charset); readDecode != nil {
+	if tc.Charset != common.UTF8 {
+		if readDecode := common.LookupCharsetDecode(tc.Charset); readDecode != nil {
 			tc.transformReader = transform.NewReader(client, readDecode)
 		}
-		if writerEncode := model.LookupCharsetEncode(tc.Charset); writerEncode != nil {
+		if writerEncode := common.LookupCharsetEncode(tc.Charset); writerEncode != nil {
 			tc.transformWriter = transform.NewWriter(client, writerEncode)
 		}
 	}

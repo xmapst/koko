@@ -3,8 +3,8 @@ package service
 import (
 	"fmt"
 
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 )
 
 func GetUserAssetByID(userID, assertID string) (assets []model.Asset) {
@@ -88,12 +88,12 @@ func GetUserNodeTreeWithAsset(userID, nodeKey, cachePolicy string) (nodeTrees mo
 	return
 }
 
-func SearchPermAsset(uid, key string) (res model.AssetList, err error) {
-	Url := fmt.Sprintf(UserPermsAssetsURL, uid)
-	payload := map[string]string{"search": key}
-	_, err = authClient.Get(Url, &res, payload)
-	if err != nil {
-		logger.Errorf("Get user node tree error: %s", err)
-	}
-	return
-}
+//func SearchPermAsset(uid, key string) (res model.AssetList, err error) {
+//	Url := fmt.Sprintf(UserPermsAssetsURL, uid)
+//	payload := map[string]string{"search": key}
+//	_, err = authClient.Get(Url, &res, payload)
+//	if err != nil {
+//		logger.Errorf("Get user node tree error: %s", err)
+//	}
+//	return
+//}

@@ -7,7 +7,7 @@ import (
 	gossh "golang.org/x/crypto/ssh"
 	"golang.org/x/text/transform"
 
-	"github.com/jumpserver/koko/pkg/model"
+	"github.com/jumpserver/koko/pkg/common"
 )
 
 type ConnectionOption func(*connectionOptions)
@@ -23,7 +23,7 @@ func OptionCharset(charset string) ConnectionOption {
 }
 func NewServerSSHConnection(sess *gossh.Session, opts ...ConnectionOption) *ServerSSHConnection {
 	options := &connectionOptions{
-		charset: model.UTF8,
+		charset: common.UTF8,
 	}
 	for _, setter := range opts {
 		setter(options)
@@ -63,11 +63,11 @@ func (sc *ServerSSHConnection) Connect(h, w int, term string) (err error) {
 	if err != nil {
 		return
 	}
-	if sc.options.charset != model.UTF8 {
-		if readDecode := model.LookupCharsetDecode(sc.options.charset); readDecode != nil {
+	if sc.options.charset != common.UTF8 {
+		if readDecode := common.LookupCharsetDecode(sc.options.charset); readDecode != nil {
 			sc.stdout = transform.NewReader(sc.stdout, readDecode)
 		}
-		if writerEncode := model.LookupCharsetEncode(sc.options.charset); writerEncode != nil {
+		if writerEncode := common.LookupCharsetEncode(sc.options.charset); writerEncode != nil {
 			sc.stdin = transform.NewWriter(sc.stdin, writerEncode)
 		}
 	}

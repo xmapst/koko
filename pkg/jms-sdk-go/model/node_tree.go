@@ -1,6 +1,7 @@
 package model
 
-/*
+import "encoding/json"
+
 type NodeTreeList []NodeTreeAsset
 
 type NodeTreeAsset struct {
@@ -23,5 +24,3 @@ func ConvertMetaToAsset(body []byte) (asset Asset, err error) {
 	err = json.Unmarshal(body, &asset)
 	return
 }
-
- */

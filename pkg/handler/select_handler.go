@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/jumpserver/koko/pkg/i18n"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 	"github.com/jumpserver/koko/pkg/service"
 	"github.com/jumpserver/koko/pkg/utils"
 )
@@ -220,7 +220,7 @@ func (u *UserSelectHandler) Proxy(target map[string]interface{}) {
 			logger.Errorf("Select asset %s not found", targetId)
 			return
 		}
-		if !asset.Active() {
+		if !asset.IsActive {
 			logger.Debugf("Select asset %s is inactive", targetId)
 			msg := i18n.T("The asset is inactive")
 			_, _ = u.h.term.Write([]byte(msg))

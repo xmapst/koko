@@ -2,6 +2,7 @@ package model
 
 import (
 	"fmt"
+	"sort"
 )
 
 const LoginModeManual = "manual"
@@ -55,4 +56,39 @@ type SystemUserAuthInfo struct {
 
 func (s *SystemUserAuthInfo) String() string {
 	return fmt.Sprintf("%s(%s)", s.Name, s.Username)
+}
+
+type systemUserSortBy func(sys1, sys2 *SystemUser) bool
+
+func (by systemUserSortBy) Sort(sysUsers []SystemUser) {
+	nodeSorter := &systemUserSorter{
+		users:  sysUsers,
+		sortBy: by,
+	}
+	sort.Sort(nodeSorter)
+}
+
+type systemUserSorter struct {
+	users  []SystemUser
+	sortBy systemUserSortBy
+}
+
+func (s *systemUserSorter) Len() int {
+	return len(s.users)
+}
+
+func (s *systemUserSorter) Swap(i, j int) {
+	s.users[i], s.users[j] = s.users[j], s.users[i]
+}
+
+func (s *systemUserSorter) Less(i, j int) bool {
+	return s.sortBy(&s.users[i], &s.users[j])
+}
+
+func systemUserPrioritySort(use1, user2 *SystemUser) bool {
+	return use1.Priority < user2.Priority
+}
+
+func SortSystemUserByPriority(sysUsers []SystemUser) {
+	systemUserSortBy(systemUserPrioritySort).Sort(sysUsers)
 }

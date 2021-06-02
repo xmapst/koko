@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"os"
 	"strings"
 	"syscall"
@@ -11,9 +12,9 @@ import (
 
 	"github.com/pkg/sftp"
 
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/service"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
-	"github.com/jumpserver/koko/pkg/service"
 )
 
 var errNoSelectAsset = errors.New("please select one of the assets")
@@ -26,9 +27,10 @@ type UserSftpConn struct {
 	modeTime time.Time
 	logChan  chan *model.FTPLog
 
-	closed chan struct{}
-
+	closed    chan struct{}
 	searchDir *SearchResultDir
+
+	jmsService service.JMService
 }
 
 func (u *UserSftpConn) ReadDir(path string) (res []os.FileInfo, err error) {
@@ -262,7 +264,10 @@ func (u *UserSftpConn) ParsePath(path string) (fi os.FileInfo, restPath string) 
 }
 
 func (u *UserSftpConn) initial() {
-	nodeTrees := service.GetUserNodeTreeWithAsset(u.User.ID, "", "")
+	nodeTrees, err := u.jmsService.GetNodeTreeByUserAndNodeKey(u.User.ID, "",)
+	if err != nil{
+		// todo log
+	}
 	if u.Dirs == nil {
 		u.Dirs = map[string]os.FileInfo{}
 	}
@@ -361,7 +366,7 @@ func (u *UserSftpConn) loopPushFTPLog() {
 		}
 
 		data := ftpLogList[len(ftpLogList)-1]
-		err = service.PushFTPLog(data)
+		err = u.jmsService.CreateFileOperationLog(*data)
 		if err == nil {
 			ftpLogList = ftpLogList[:len(ftpLogList)-1]
 			maxRetry = 0
@@ -382,7 +387,7 @@ func (u *UserSftpConn) Search(key string) (res []os.FileInfo, err error) {
 		logger.Errorf("not found search folder")
 		return nil, errors.New("not found")
 	}
-	assets, err := service.SearchPermAsset(u.User.ID, key)
+	assets, err := u.jmsService.SearchPermAsset(u.User.ID, key)
 	if err != nil {
 		logger.Errorf("search asset err: %s", err)
 		return nil, err

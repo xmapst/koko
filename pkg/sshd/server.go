@@ -2,7 +2,6 @@ package sshd
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"strconv"
 	"time"
@@ -50,7 +49,7 @@ type SSHHandler interface {
 	SessionHandler(ssh.Session)
 	SFTPHandler(ssh.Session)
 	LocalPortForwardingPermission(ctx ssh.Context, destinationHost string, destinationPort uint32) bool
-	DirectTCPIPChannelHandler(srv *ssh.Server, conn *gossh.ServerConn, newChan gossh.NewChannel, ctx ssh.Context)
+	DirectTCPIPChannelHandler(ctx ssh.Context, newChan gossh.NewChannel, destAddr string)
 }
 
 type AuthStatus ssh.AuthResult
@@ -98,15 +97,12 @@ func NewSSHServer(handler SSHHandler) *Server {
 					return
 				}
 				dest := net.JoinHostPort(localD.DestAddr, strconv.FormatInt(int64(localD.DestPort), 10))
-				handler.DirectTCPIPChannelHandler(srv, conn, newChan, ctx)
-				fmt.Println(dest)
+				handler.DirectTCPIPChannelHandler(ctx, newChan, dest)
 			},
 		},
 	}
 	return &Server{srv}
 }
-
-
 
 type localForwardChannelData struct {
 	DestAddr string

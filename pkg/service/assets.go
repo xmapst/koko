@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
+
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 )
 
 func GetSystemUserAssetAuthInfo(systemUserID, assetID string) (info model.SystemUserAuthInfo) {

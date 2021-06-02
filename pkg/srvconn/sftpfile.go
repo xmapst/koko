@@ -13,11 +13,11 @@ import (
 
 	"github.com/pkg/sftp"
 
-	"github.com/jumpserver/koko/pkg/common"
 	"github.com/jumpserver/koko/pkg/config"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/common"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/service"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
-	"github.com/jumpserver/koko/pkg/service"
 )
 
 const (
@@ -83,6 +83,8 @@ type NodeDir struct {
 	modeTime   time.Time
 
 	once *sync.Once
+
+	jmsService *service.JMService
 }
 
 func (nd *NodeDir) Name() string {
@@ -111,7 +113,10 @@ func (nd *NodeDir) List() (res []os.FileInfo, err error) {
 
 func (nd *NodeDir) loadNodeAsset(uSftp *UserSftpConn) {
 	nd.once.Do(func() {
-		nodeTrees := service.GetUserNodeTreeWithAsset(uSftp.User.ID, nd.node.Key, "1")
+		nodeTrees, err := nd.jmsService.GetNodeTreeByUserAndNodeKey(uSftp.User.ID, nd.node.Key)
+		if err != nil {
+			return
+		}
 		dirs := map[string]os.FileInfo{}
 		for _, item := range nodeTrees {
 			if item.ChkDisabled {
@@ -243,6 +248,8 @@ type AssetDir struct {
 	Overtime   time.Duration
 
 	mu sync.Mutex
+
+	jmsService *service.JMService
 }
 
 func (ad *AssetDir) Name() string {
@@ -269,7 +276,10 @@ func (ad *AssetDir) Sys() interface{} {
 func (ad *AssetDir) loadSystemUsers() {
 	ad.once.Do(func() {
 		sus := make(map[string]*model.SystemUser)
-		SystemUsers := service.GetUserAssetSystemUsers(ad.user.ID, ad.asset.ID)
+		SystemUsers, err := ad.jmsService.GetSystemUsersByUserIdAndAssetId(ad.user.ID, ad.asset.ID)
+		if err != nil {
+			return
+		}
 		for i := 0; i < len(SystemUsers); i++ {
 			if SystemUsers[i].Protocol == "ssh" {
 				ok := true
@@ -284,7 +294,11 @@ func (ad *AssetDir) loadSystemUsers() {
 		}
 		ad.suMaps = sus
 		// Todo: Refactor code in the future. Currently just patch gateway bug
-		if detailAsset := service.GetAsset(ad.asset.ID); detailAsset.ID == ad.asset.ID {
+		detailAsset, err := ad.jmsService.GetAssetById(ad.asset.ID)
+		if err != nil {
+			return
+		}
+		if detailAsset.ID == ad.asset.ID {
 			ad.asset = &detailAsset
 		}
 	})
@@ -694,10 +708,13 @@ func (ad *AssetDir) GetSftpClient(su *model.SystemUser) (conn *SftpConn, err err
 	if su.Password == "" && su.PrivateKey == "" && su.LoginMode != model.LoginModeManual {
 		var info model.SystemUserAuthInfo
 		if su.UsernameSameWithUser {
-			info = service.GetUserAssetAuthInfo(su.ID, ad.asset.ID, ad.user.ID, ad.user.Username)
+			info, err = ad.jmsService.GetSystemUserAuthById(su.ID, ad.asset.ID, ad.user.ID, ad.user.Username)
 			su.Username = ad.user.Username
 		} else {
-			info = service.GetSystemUserAssetAuthInfo(su.ID, ad.asset.ID)
+			info, err = ad.jmsService.GetSystemUserAuthById(su.ID, ad.asset.ID, "", "")
+		}
+		if err != nil {
+			return nil, err
 		}
 		su.Password = info.Password
 		su.PrivateKey = info.PrivateKey
@@ -816,7 +833,7 @@ func (ad *AssetDir) CreateFTPLog(su *model.SystemUser, operate, filename string,
 		RemoteAddr: ad.addr,
 		Operate:    operate,
 		Path:       filename,
-		DataStart:  common.CurrentUTCTime(),
+		DataStart:  common.NewNowUTCTime(),
 		IsSuccess:  isSuccess,
 	}
 	ad.logChan <- &data

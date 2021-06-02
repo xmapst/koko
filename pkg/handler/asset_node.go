@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jumpserver/koko/pkg/i18n"
-	"github.com/jumpserver/koko/pkg/model"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/service"
 	"github.com/jumpserver/koko/pkg/utils"
 )

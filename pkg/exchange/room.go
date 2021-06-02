@@ -10,7 +10,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 )
 
 type RoomManager interface {
@@ -80,9 +79,9 @@ func (r *Room) run() {
 		case con := <-r.subscriber:
 			connMaps[con.Id] = con
 			r.recentMessages.Do(func(value interface{}) {
-				if msg, ok := value.(*model.RoomMessage); ok {
+				if msg, ok := value.(*RoomMessage); ok {
 					switch msg.Event {
-					case model.DataEvent:
+					case DataEvent:
 						_, _ = con.Write(msg.Body)
 					}
 				}
@@ -97,7 +96,7 @@ func (r *Room) run() {
 				userConns = append(userConns, connMaps[k])
 			}
 			switch msg.Event {
-			case model.DataEvent:
+			case DataEvent:
 				r.recentMessages.Value = msg
 				r.recentMessages = r.recentMessages.Next()
 			}
@@ -192,9 +191,9 @@ type Conn struct {
 
 func (c *Conn) handlerMessage(msg *RoomMessage) {
 	switch msg.Event {
-	case model.DataEvent:
+	case DataEvent:
 		_, _ = c.Write(msg.Body)
-	case model.PingEvent:
+	case PingEvent:
 		_, _ = c.Write(nil)
 	}
 }

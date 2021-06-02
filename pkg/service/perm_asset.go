@@ -5,8 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
+
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
 )
 
 func GetUserPermsAssets(userID string, params model.PaginationParam) (resp model.PaginationResponse) {

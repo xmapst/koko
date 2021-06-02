@@ -3,7 +3,7 @@ package proxy
 import (
 	"strings"
 
-	"github.com/jumpserver/koko/pkg/model"
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	storage "github.com/jumpserver/koko/pkg/proxy/recorderstorage"
 )
 

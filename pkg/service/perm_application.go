@@ -3,7 +3,8 @@ package service
 import (
 	"fmt"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/model"
+
+	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 )
 
 func GetAllUserPermMySQLs(userId string) []map[string]interface{} {
