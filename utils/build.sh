@@ -4,7 +4,7 @@ utils_dir=$(pwd)
 project_dir=$(dirname "$utils_dir")
 release_dir=${project_dir}/release
 OS=${INPUT_OS-'linux'}
-ARCH=${INPUT_ARCH-'amd64'}
+ARCH=${TARGETARCH}
 
 if [[ -n "${GOOS-}" ]];then
   OS="${GOOS}"
@@ -52,4 +52,3 @@ cp -r "${utils_dir}/init-kubectl.sh" "${to_dir}"
 for i in koko kubectl static templates locale config_example.yml;do
   cp -r $i "${to_dir}"
 done
-

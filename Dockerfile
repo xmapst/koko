@@ -1,15 +1,16 @@
 FROM golang:1.15-alpine as stage-build
 LABEL stage=stage-build
+ARG TARGETARCH=amd64 \
+    Version=unknown
 WORKDIR /opt/koko
 ARG GOPROXY=https://goproxy.io
-ARG KUBECTLDOWNLOADURL=https://download.jumpserver.org/public/kubectl.tar.gz
+ARG KUBECTLDOWNLOADURL=https://github.com/jumpserver/koko/releases/download/${Version}/koko-${Version}-linux-${TARGETARCH}.tar.gz
 ARG ALIASESURL=http://download.jumpserver.org/public/kubectl_aliases.tar.gz
 ARG VERSION
 ENV GOPROXY=$GOPROXY
 ENV VERSION=$VERSION
 ENV GO111MODULE=on
 ENV GOOS=linux
-ENV GOARCH=amd64
 ENV CGO_ENABLED=0
 
 COPY . .
@@ -28,9 +29,7 @@ RUN apt-get update -y \
     && rm -rf /var/lib/apt/lists/*
 ENV LANG en_US.utf8
 
-ENV MYSQL_MAJOR 8.0
-RUN echo "deb http://mirrors.tuna.tsinghua.edu.cn/mysql/apt/debian stretch mysql-${MYSQL_MAJOR}" > /etc/apt/sources.list.d/mysql.list
-RUN apt-get update && apt-get install -y --allow-unauthenticated --no-install-recommends mysql-community-client \
+RUN apt-get update && apt-get install -y --allow-unauthenticated --no-install-recommends mariadb-client \
     && apt-get install -y --no-install-recommends gdb ca-certificates jq iproute2 less bash-completion unzip sysstat acl net-tools iputils-ping telnet dnsutils wget vim git \
     && rm -rf /var/lib/apt/lists/*
 
@@ -39,7 +38,6 @@ WORKDIR /opt/koko/
 COPY --from=stage-build /opt/koko/release/koko /opt/koko
 COPY --from=stage-build /opt/koko/release/koko/kubectl /usr/local/bin/kubectl
 COPY --from=stage-build /opt/koko/rawkubectl /usr/local/bin/rawkubectl
-COPY --from=stage-build /usr/local/go/src/runtime/sys_linux_amd64.s /usr/local/go/src/runtime/sys_linux_amd64.s
 COPY --from=stage-build /opt/koko/utils/coredump.sh .
 COPY --from=stage-build /opt/koko/entrypoint.sh .
 COPY --from=stage-build /opt/koko/utils/init-kubectl.sh .
