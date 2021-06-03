@@ -9,7 +9,6 @@ import (
 
 	"github.com/jumpserver/koko/pkg/common"
 	"github.com/jumpserver/koko/pkg/logger"
-	"github.com/jumpserver/koko/pkg/jms-sdk-go/model"
 	"github.com/jumpserver/koko/pkg/service"
 )
 
@@ -34,12 +33,12 @@ func checkAuth(ctx ssh.Context, password, publicKey string) (res ssh.AuthResult)
 		authMethod = "password"
 	}
 	remoteAddr, _, _ := net.SplitHostPort(ctx.RemoteAddr().String())
-	userClient, ok := ctx.Value(model.ContextKeyClient).(*service.SessionClient)
+	userClient, ok := ctx.Value(ContextKeyClient).(*service.SessionClient)
 	if !ok {
 		sessionClient := service.NewSessionClient(service.Username(username),
 			service.RemoteAddr(remoteAddr), service.LoginType("T"))
 		userClient = &sessionClient
-		ctx.SetValue(model.ContextKeyClient, userClient)
+		ctx.SetValue(ContextKeyClient, userClient)
 	}
 	userClient.SetOption(service.Password(password), service.PublicKey(publicKey))
 	logger.Infof("SSH conn[%s] authenticating user %s %s", ctx.SessionID(), username, authMethod)
@@ -50,10 +49,10 @@ func checkAuth(ctx ssh.Context, password, publicKey string) (res ssh.AuthResult)
 		res = ssh.AuthPartiallySuccessful
 	case service.AuthSuccess:
 		res = ssh.AuthSuccessful
-		ctx.SetValue(model.ContextKeyUser, &user)
+		ctx.SetValue(ContextKeyUser, &user)
 	case service.AuthConfirmRequired:
 		required := true
-		ctx.SetValue(model.ContextKeyConfirmRequired, &required)
+		ctx.SetValue(ContextKeyConfirmRequired, &required)
 		action = actionPartialAccepted
 		res = ssh.AuthPartiallySuccessful
 	default:
@@ -84,7 +83,7 @@ func CheckUserPublicKey(ctx ssh.Context, key ssh.PublicKey) ssh.AuthResult {
 }
 
 func CheckMFA(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) (res ssh.AuthResult) {
-	if value, ok := ctx.Value(model.ContextKeyConfirmFailed).(*bool); ok && *value {
+	if value, ok := ctx.Value(ContextKeyConfirmFailed).(*bool); ok && *value {
 		return ssh.AuthFailed
 	}
 
@@ -96,13 +95,13 @@ func CheckMFA(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) (r
 	instruction := mfaInstruction
 	question := mfaQuestion
 
-	client, ok := ctx.Value(model.ContextKeyClient).(*service.SessionClient)
+	client, ok := ctx.Value(ContextKeyClient).(*service.SessionClient)
 	if !ok {
 		logger.Errorf("SSH conn[%s] user %s Mfa Auth failed: not found session client.",
 			ctx.SessionID(), username)
 		return
 	}
-	value, ok := ctx.Value(model.ContextKeyConfirmRequired).(*bool)
+	value, ok := ctx.Value(ContextKeyConfirmRequired).(*bool)
 	if ok && *value {
 		confirmAction = true
 		instruction = confirmInstruction
@@ -124,7 +123,7 @@ func CheckMFA(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) (r
 			switch authStatus {
 			case service.AuthSuccess:
 				res = ssh.AuthSuccessful
-				ctx.SetValue(model.ContextKeyUser, &user)
+				ctx.SetValue(ContextKeyUser, &user)
 				logger.Infof("SSH conn[%s] checking user %s login confirm success", ctx.SessionID(), username)
 				return
 			}
@@ -135,7 +134,7 @@ func CheckMFA(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) (r
 			return
 		}
 		failed := true
-		ctx.SetValue(model.ContextKeyConfirmFailed, &failed)
+		ctx.SetValue(ContextKeyConfirmFailed, &failed)
 		logger.Infof("SSH conn[%s] checking user %s login confirm failed", ctx.SessionID(), username)
 		return
 	}
@@ -145,13 +144,13 @@ func CheckMFA(ctx ssh.Context, challenger gossh.KeyboardInteractiveChallenge) (r
 	switch authStatus {
 	case service.AuthSuccess:
 		res = ssh.AuthSuccessful
-		ctx.SetValue(model.ContextKeyUser, &user)
+		ctx.SetValue(ContextKeyUser, &user)
 		logger.Infof("SSH conn[%s] %s MFA for %s from %s", ctx.SessionID(),
 			actionAccepted, username, remoteAddr)
 	case service.AuthConfirmRequired:
 		res = ssh.AuthPartiallySuccessful
 		required := true
-		ctx.SetValue(model.ContextKeyConfirmRequired, &required)
+		ctx.SetValue(ContextKeyConfirmRequired, &required)
 		logger.Infof("SSH conn[%s] %s MFA for %s from %s", ctx.SessionID(),
 			actionPartialAccepted, username, remoteAddr)
 	default:
