@@ -14,7 +14,7 @@ ENV TARGETARCH=$TARGETARCH \
     CGO_ENABLED=0
 
 COPY . .
-RUN wget https://github.com/jumpserver/koko/releases/download/${Version}/koko-${Version}-linux-${TARGETARCH}.tar.gz -O kubectl.tar.gz && tar -xzf kubectl.tar.gz \
+RUN wget https://github.com/jumpserver/koko/releases/download/${VERSION}/koko-${VERSION}-linux-${TARGETARCH}.tar.gz -O kubectl.tar.gz && tar -xzf kubectl.tar.gz \
     && chmod +x kubectl && mv kubectl rawkubectl \
     && wget http://download.jumpserver.org/public/kubectl_aliases.tar.gz -O kubectl_aliases.tar.gz && tar -xzvf kubectl_aliases.tar.gz \
     && cd utils && sh -ixeu build.sh
